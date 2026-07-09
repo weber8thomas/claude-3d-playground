@@ -270,6 +270,10 @@ module build_plate() {
     bar_flat() bar_a();
     translate([0,40,0]) bar_flat() bar_b();
     translate([0,115,0]) hooks3();   // ecarte : le crochet v15 (27,5 mm) degage le lobe de B
+    if (pin_mode == "rivet") {       // 1 rivet utile + 1 de rechange
+        translate([10,80,0]) pin();
+        translate([24,80,0]) pin();
+    }
 }
 
 if      (part=="a")          bar_flat() bar_a();
