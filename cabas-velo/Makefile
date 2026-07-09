@@ -18,6 +18,12 @@ serve: web         ## Sert build/ en local (http://localhost:8000/index.html)
 
 stl: $(addprefix build/,$(addsuffix .stl,$(PARTS)))  ## Rendre tous les STL
 
+export:            ## STL versionnes (stl/) pour telechargement / lien GitHub
+	@mkdir -p stl
+	@for p in hook hooks3 a b gauge plate; do \
+	  openscad -o stl/$$p.stl -D "part=\"$$p\"" $(SRC) 2>&1 | grep -Ei 'WARNING|ERROR' && exit 1 || true; \
+	  echo "  -> stl/$$p.stl"; done
+
 build/%.stl: $(SRC) | build
 	@openscad -o $@ -D 'part="$*"' $< 2>&1 | grep -Ei 'WARNING|ERROR' && exit 1 || true
 	@echo "  -> $@"
