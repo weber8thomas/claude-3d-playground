@@ -8,6 +8,8 @@ verify:            ## Toutes les gardes : WARNING, Volumes, zmin, encombrement
 
 web:               ## Viewer 3D autonome (build/index.html) : chaque iteration a l'oeil
 	@python3 tools/gallery.py
+	@cp build/index.html docs/viewer.html
+	@echo "  copie versionnee -> docs/viewer.html (lien GitHub / htmlpreview)"
 	@echo "  ouvre  build/index.html  (autonome, marche en double-clic)  ou  make serve"
 
 serve: web         ## Sert build/ en local (http://localhost:8000/index.html)
