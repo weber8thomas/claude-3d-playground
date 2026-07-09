@@ -54,10 +54,19 @@ col_wall    = 1.8;
 col_clr     = 0.15;
 
 // --- CHARNIERE --------------------------------------------------------
+pin_mode    = "rivet"; // "rivet" (axe imprime, snap-fit demontable) | "m4" (vis sans tete M4x8)
 pin_d       = 4.0;    // 2.5 corde a piano | 4.0 vis sans tete M4 (DIN 913), demontable
-screw_l     = 8.0;    // longueur de la vis M4 dispo : le paquet de charnons tient dedans
-cap_t       = 1.0;    // toit (capuchon) ferme le haut du charnon superieur de A
+screw_l     = 8.0;    // (mode m4) longueur de la vis M4 dispo : le paquet tient dedans
+cap_t       = 1.0;    // (mode m4) toit (capuchon) qui ferme le haut du charnon superieur de A
 pin_gap     = 0.1;
+
+// --- RIVET IMPRIME (mode "rivet") : tete + barbe fendue, se clipse, se repince
+riv_head_d  = 5.5;    // collerette (bute sur le dessus, < diametre du charnon 6,5)
+riv_head_t  = 1.6;
+riv_barb_d  = 5.0;    // disque d'accroche (bute sous le dessous)
+riv_rot     = 0.25;   // jeu de rotation du fut dans l'alesage
+riv_slot    = 1.2;    // largeur de fente (les deux pattes se compriment pour passer)
+riv_split   = 6.0;    // longueur fendue
 kn_wall     = 1.25;
 capture_t   = 0.3;
 kn_clr      = 0.3;
@@ -78,10 +87,14 @@ hinge_lip  = sqrt(pow(bore_free/2,2) - pow((pin_d - capture_t)/2,2));
 debord     = pin_gap + hinge_lip;
 axe_out    = pin_gap + pin_d/2;
 capture    = pin_d - 2*sqrt(pow(bore_free/2,2) - pow(hinge_lip,2));
-// Paquet de charnons compact dans la longueur de vis, capuchonne en haut.
-k1     = screw_l/3;          // etage bas de A
-k2     = 2*screw_l/3;        // etage B
-hz_top = screw_l + cap_t;    // sommet du charnon superieur de A (le toit est au-dessus de l'alesage)
+// Charnons : en mode vis M4, paquet compact (screw_l) + toit ; en mode rivet,
+// paquet pleine hauteur, alesages tous en jeu (A et B tournent libre autour du rivet).
+is_m4  = (pin_mode == "m4");
+k1     = is_m4 ? screw_l/3     : bar_h/3;      // etage bas de A
+k2     = is_m4 ? 2*screw_l/3   : 2*bar_h/3;    // etage B
+hz_top = is_m4 ? screw_l+cap_t : bar_h;        // sommet du charnon superieur de A
+boreB  = is_m4 ? bore_tight    : bore_free;    // B serre (vis) | en jeu (rivet)
+bdepth = is_m4 ? screw_l       : bar_h+1;      // alesage borgne (toit M4) | traversant (rivet)
 
 // =====================  GEOMETRIE DU CROCHET  ========================
 // Collier : anneau ferme derriere le dos, il enfile le jonc (bar_t x bar_h).
@@ -214,18 +227,36 @@ module bar_body() {
         translate([0,0,bar_h]) rotate([90,0,0]) linear_extrude(height=bar_t) half_tail2d();
     }
 }
-// A : deux charnons (bas ouvert + haut capuchonne). Alesage libre, la vis y tourne.
+// A : deux charnons (bas + haut). Alesage libre (l'axe y tourne). En mode M4 le
+// haut est capuchonne (alesage borgne a screw_l) ; en mode rivet il est traversant.
 module bar_a() {
     difference() {
         union() { bar_body(); knuckle(0,k1-kn_clr); knuckle(k2+kn_clr,hz_top); }
-        relief_at(k1,k2); collar_bore(bore_free, screw_l);   // toit : alesage stoppe a screw_l
+        relief_at(k1,k2); collar_bore(bore_free, bdepth);
     }
 }
-// B : charnon central, alesage serre -> la vis M4 s'y visse (blocage axial, demontable).
+// B : charnon central. En M4 alesage serre (la vis s'y visse) ; en rivet en jeu (tourne libre).
 module bar_b() {
     difference() {
         union() { bar_body(); knuckle(k1+kn_clr,k2-kn_clr); }
-        relief_at(-1,k1); relief_at(k2,hz_top+1); collar_bore(bore_tight, screw_l);
+        relief_at(-1,k1); relief_at(k2,hz_top+1); collar_bore(boreB, bdepth);
+    }
+}
+// RIVET IMPRIME : tete (bute dessus) + fut tournant + barbe fendue (clipse dessous).
+// Imprime tel quel, tete sur le plateau. En service : enfile par le bout barbe,
+// les deux pattes se compriment puis ressortent -> capture axiale, se repince pour retirer.
+module pin() {
+    sd  = bore_free - riv_rot;      // fut : tourne dans l'alesage
+    Lsh = bar_h + 0.5;              // traverse le paquet
+    difference() {
+        union() {
+            cylinder(d=riv_head_d, h=riv_head_t, $fn=48);
+            translate([0,0,riv_head_t])          cylinder(d=sd, h=Lsh, $fn=48);
+            translate([0,0,riv_head_t+Lsh])       cylinder(d=riv_barb_d, h=0.8, $fn=48);
+            translate([0,0,riv_head_t+Lsh+0.8])   cylinder(d1=riv_barb_d, d2=sd*0.5, h=1.6, $fn=48);
+        }
+        translate([-riv_slot/2, -riv_barb_d, riv_head_t+Lsh-riv_split])
+            cube([riv_slot, 2*riv_barb_d, riv_split+0.8+1.6+1]);
     }
 }
 module hinge_test() {
@@ -246,6 +277,7 @@ else if (part=="b")          bar_flat() bar_b();
 else if (part=="hook")       hook();
 else if (part=="hooks3")     hooks3();
 else if (part=="gauge")      gauge();
+else if (part=="pin")        pin();
 else if (part=="plate")      build_plate();
 else if (part=="hinge_test") bar_flat() hinge_test();
 else { bar_b(); color("DimGray") mirror([1,0,0]) bar_a(); }

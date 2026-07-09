@@ -65,6 +65,10 @@
       "printable": true,
       "bodies": 1
     },
+    "pin": {
+      "printable": true,
+      "bodies": 1
+    },
     "plate": {
       "bodies": 5
     }

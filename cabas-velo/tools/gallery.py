@@ -17,7 +17,7 @@ ROOT   = pathlib.Path(__file__).resolve().parent.parent
 SRC    = ROOT / "src" / "cabas_velo.scad"
 BUILD  = ROOT / "build"
 VENDOR = ROOT / "tools" / "web" / "vendor"
-PARTS  = ["hook", "hooks3", "a", "b", "gauge", "hinge_test", "plate"]
+PARTS  = ["hook", "hooks3", "a", "b", "gauge", "pin", "hinge_test", "plate"]
 
 # quelles cotes CIBLE la piece "hook" doit-elle afficher, et depuis quel echo
 ECHO_MAP = [
