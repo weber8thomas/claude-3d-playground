@@ -55,6 +55,8 @@ col_clr     = 0.15;
 
 // --- CHARNIERE --------------------------------------------------------
 pin_d       = 4.0;    // 2.5 corde a piano | 4.0 vis sans tete M4 (DIN 913), demontable
+screw_l     = 8.0;    // longueur de la vis M4 dispo : le paquet de charnons tient dedans
+cap_t       = 1.0;    // toit (capuchon) ferme le haut du charnon superieur de A
 pin_gap     = 0.1;
 kn_wall     = 1.25;
 capture_t   = 0.3;
@@ -76,8 +78,10 @@ hinge_lip  = sqrt(pow(bore_free/2,2) - pow((pin_d - capture_t)/2,2));
 debord     = pin_gap + hinge_lip;
 axe_out    = pin_gap + pin_d/2;
 capture    = pin_d - 2*sqrt(pow(bore_free/2,2) - pow(hinge_lip,2));
-k1 = bar_h/3;
-k2 = 2*bar_h/3;
+// Paquet de charnons compact dans la longueur de vis, capuchonne en haut.
+k1     = screw_l/3;          // etage bas de A
+k2     = 2*screw_l/3;        // etage B
+hz_top = screw_l + cap_t;    // sommet du charnon superieur de A (le toit est au-dessus de l'alesage)
 
 // =====================  GEOMETRIE DU CROCHET  ========================
 // Collier : anneau ferme derriere le dos, il enfile le jonc (bar_t x bar_h).
@@ -185,10 +189,12 @@ module half_tail2d() {
         translate([tail_root,-1]) square([tail_span, sh+12]);
     }
 }
-module knuckle_at(z0,z1,bore) {
+// charnon plein en C : gorge ouverte vers la face tissu (-y), imprimable sans support.
+// L'alesage est fait par collar_bore (borgne), pas ici : le charnon superieur garde donc
+// son TOIT (le capuchon) au-dessus de l'alesage.
+module knuckle(z0,z1) {
     difference() {
         translate([0,pin_y,z0]) cylinder(r=knuckle, h=z1-z0);
-        translate([0,pin_y,z0-1]) cylinder(d=bore, h=z1-z0+2);
         translate([-20,-60+pin_y-hinge_lip,z0-1]) cube([40,60,z1-z0+2]);
     }
 }
@@ -198,9 +204,9 @@ module relief_at(z0,z1) {
         translate([-20,pin_y-hinge_lip,z0]) cube([40,60,z1-z0]);
     }
 }
-module collar_bore(bore) {
-    translate([0,pin_y,-1]) cylinder(d=bore, h=bar_h+2);
-    translate([-20,-60+pin_y-hinge_lip,-1]) cube([40,60,bar_h+2]);
+// alesage de l'axe, BORGNE a 'depth' : ouvert en bas (on enfile la vis), ferme en haut.
+module collar_bore(bore, depth) {
+    translate([0,pin_y,-1]) cylinder(d=bore, h=depth+1);
 }
 module bar_body() {
     union() {
@@ -208,16 +214,18 @@ module bar_body() {
         translate([0,0,bar_h]) rotate([90,0,0]) linear_extrude(height=bar_t) half_tail2d();
     }
 }
+// A : deux charnons (bas ouvert + haut capuchonne). Alesage libre, la vis y tourne.
 module bar_a() {
     difference() {
-        union() { bar_body(); knuckle_at(0,k1-kn_clr,bore_free); knuckle_at(k2+kn_clr,bar_h,bore_free); }
-        relief_at(k1,k2); collar_bore(bore_free);
+        union() { bar_body(); knuckle(0,k1-kn_clr); knuckle(k2+kn_clr,hz_top); }
+        relief_at(k1,k2); collar_bore(bore_free, screw_l);   // toit : alesage stoppe a screw_l
     }
 }
+// B : charnon central, alesage serre -> la vis M4 s'y visse (blocage axial, demontable).
 module bar_b() {
     difference() {
-        union() { bar_body(); knuckle_at(k1+kn_clr,k2-kn_clr,bore_tight); }
-        relief_at(-1,k1); relief_at(k2,bar_h+1); collar_bore(bore_tight);
+        union() { bar_body(); knuckle(k1+kn_clr,k2-kn_clr); }
+        relief_at(-1,k1); relief_at(k2,hz_top+1); collar_bore(bore_tight, screw_l);
     }
 }
 module hinge_test() {

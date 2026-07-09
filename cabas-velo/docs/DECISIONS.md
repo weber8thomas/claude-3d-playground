@@ -28,6 +28,7 @@ Chaque entree dit ce qui a change **et ce qui l'a revele**. La colonne
 | v15 | Crochet reecrit sur le modele de l'editeur : dos + bras du haut + **ventre en arc a 3 points** + languette | cotes exactes du croquis (bras 15, prof 21,5, ventre 17, bas 10, dos 25, languette 10@-45). Le ventre suit le croquis (profondeur + hauteur) au lieu d'epouser le rayon du tube ; une garde verifie que le tube s'y loge |
 | v15 | Collier ferme repositionne au dos, biseau de languette reduit a une bande | le biseau 40x40 tranchait le ventre a -45 ; le collier bulge vers l'arriere sur la zone du jonc |
 | v16 | **Axe de charniere : vis sans tete M4 (`pin_d = 4`), demontable** | l'axe ne tient PAS par la fermeture du C (gorge ouverte, imprimable sans support) : il s'enfile axialement, retenu de cote par la levre (capture 0,30) et en longueur par le vissage dans le charnon serre de B. Butee 1,55 (au ras du mini 1,5), debord axe 2,10. Bornes x de a/b elargies (charnon plus gros : 143,25) |
+| v16 | **Paquet de charnons compacte dans `screw_l = 8` + toit (`cap_t`)** | la vis dispo est une M4x8 : le paquet A-B-A tient dans 8 mm (le reste du jonc, 8->11, est plein), et le charnon superieur de A est capuchonne (alesage borgne). On enfile la vis par le bas, elle se visse dans B (~2,1 mm de filet) et bute sous le toit : rien ne depasse, pas de sortie par le haut |
 
 ## Deux regressions silencieuses, meme cause
 
