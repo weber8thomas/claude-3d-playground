@@ -27,6 +27,7 @@ Chaque entree dit ce qui a change **et ce qui l'a revele**. La colonne
 | v15 | **Editeur interactif** (`tools/web/designer.html`) | regler soi-meme les mm et les angles, cible du croquis en pointilles, test d'emboitement du tube en direct, export des valeurs |
 | v15 | Crochet reecrit sur le modele de l'editeur : dos + bras du haut + **ventre en arc a 3 points** + languette | cotes exactes du croquis (bras 15, prof 21,5, ventre 17, bas 10, dos 25, languette 10@-45). Le ventre suit le croquis (profondeur + hauteur) au lieu d'epouser le rayon du tube ; une garde verifie que le tube s'y loge |
 | v15 | Collier ferme repositionne au dos, biseau de languette reduit a une bande | le biseau 40x40 tranchait le ventre a -45 ; le collier bulge vers l'arriere sur la zone du jonc |
+| v16 | **Axe de charniere : vis sans tete M4 (`pin_d = 4`), demontable** | l'axe ne tient PAS par la fermeture du C (gorge ouverte, imprimable sans support) : il s'enfile axialement, retenu de cote par la levre (capture 0,30) et en longueur par le vissage dans le charnon serre de B. Butee 1,55 (au ras du mini 1,5), debord axe 2,10. Bornes x de a/b elargies (charnon plus gros : 143,25) |
 
 ## Deux regressions silencieuses, meme cause
 

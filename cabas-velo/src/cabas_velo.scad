@@ -54,7 +54,7 @@ col_wall    = 1.8;
 col_clr     = 0.15;
 
 // --- CHARNIERE --------------------------------------------------------
-pin_d       = 2.5;    // 2.5 corde a piano | 4.0 vis sans tete M4
+pin_d       = 4.0;    // 2.5 corde a piano | 4.0 vis sans tete M4 (DIN 913), demontable
 pin_gap     = 0.1;
 kn_wall     = 1.25;
 capture_t   = 0.3;
