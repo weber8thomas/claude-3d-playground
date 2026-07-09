@@ -1,0 +1,14 @@
+{
+  "_comment": "Cotes relevees sur le croquis a main levee de l'utilisateur (forme en R). Verite EXTERNE, servant de cible visuelle -- jamais recopiee dans le .scad, jamais transformee en assert (regle CLAUDE.md : un assert garde une coherence interne, pas une mesure supposee). Le viewer et profile_plot lisent ce fichier pour tracer les cotes cibles a cote du reel.",
+  "unit": "mm",
+  "shape": "R",
+  "cotes": {
+    "back_h":     { "val": 25,    "label": "dos : hauteur du profil (plan)" },
+    "arm_top":    { "val": 15,    "label": "bras du haut" },
+    "hook_depth": { "val": 21,    "label": "profondeur du ventre" },
+    "bowl_h":     { "val": 17,    "label": "hauteur du ventre" },
+    "arm_bot":    { "val": 10,    "label": "bras du bas" },
+    "lang_l":     { "val": 10,    "label": "languette / levier de decrochage" },
+    "tube_d":     { "val": 12.23, "label": "tube du porte-bagages (loge dans le ventre)" }
+  }
+}
