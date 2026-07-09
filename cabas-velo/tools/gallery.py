@@ -21,11 +21,12 @@ PARTS  = ["hook", "hooks3", "a", "b", "gauge", "hinge_test", "plate"]
 
 # quelles cotes CIBLE la piece "hook" doit-elle afficher, et depuis quel echo
 ECHO_MAP = [
-    ("hook_depth", "Profondeur",     r"Profondeur\s*=\s*(-?[\d.]+)"),
-    ("back_h",     "Hauteur totale", r"Hauteur totale\s*=\s*(-?[\d.]+)"),
-    ("bowl_h",     "Ventre",         r"Ventre\s*=\s*(-?[\d.]+)"),
-    ("arm_top",    "Bras du haut",   r"Bras du haut\s*=\s*(-?[\d.]+)"),
-    ("lang_l",     "Languette",      r"Languette\s*=\s*(-?[\d.]+)"),
+    ("arm_top", "Bras du haut", r"Bras du haut\s*=\s*(-?[\d.]+)"),
+    ("depth",   "Profondeur",   r"Profondeur\s*=\s*(-?[\d.]+)"),
+    ("bowl_h",  "Ventre",       r"Ventre\s*=\s*(-?[\d.]+)"),
+    ("arm_bot", "Bras du bas",  r"Bras du bas\s*=\s*(-?[\d.]+)"),
+    ("back_h",  "Dos",          r"Dos\s*=\s*(-?[\d.]+)"),
+    ("leg_l",   "Languette",    r"Languette\s*=\s*(-?[\d.]+)"),
 ]
 
 def sh(cmd):
@@ -109,8 +110,10 @@ def build_html():
         sha=html.escape(sha), when=html.escape(when),
         warn_banner=warn_banner,
         rows=rows_html(tgt, {**real, **echo_real}),
-        wrap=pp_params["wrap_end"], lang_l=pp_params["lang_l"],
-        lang_ang=pp_params["lang_ang"], mouth=g["mouth"], tube=pp_params["tube_d"],
+        arm_top=pp_params["arm_top"], arm_bot=pp_params["arm_bot"],
+        depth=pp_params["depth"], bowl_h=pp_params["bowl_h"],
+        leg_l=pp_params["leg_l"], leg_ang=pp_params["leg_ang"],
+        tube=pp_params["tube_d"], fits=("oui" if g["fits"] else "NON"),
         echoes=html.escape(raw),
         profil_b64=profil_b64,
         three=three, stll=stll, orbit=orbit,
@@ -166,8 +169,8 @@ TEMPLATE = r"""<!doctype html>
     <h2>Cible (croquis) vs réel</h2>
     <table><thead><tr><th>cote</th><th>cible</th><th>réel</th><th>écart</th></tr></thead>
     <tbody>{rows}</tbody></table>
-    <div class="legend">wrap_end={wrap}° · languette {lang_l}mm@{lang_ang}° ·
-      bouche de pose {mouth:.1f}mm (tube {tube:.2f})</div>
+    <div class="legend">bras {arm_top}/{arm_bot} · ventre {depth}×{bowl_h} ·
+      languette {leg_l}mm@{leg_ang}° · tube Ø{tube:.2f} logé : {fits}</div>
 
     <h2>Profil 2D — tube en place</h2>
     <img class="profil" src="data:image/png;base64,{profil_b64}" alt="profil">

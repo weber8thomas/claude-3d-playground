@@ -24,6 +24,9 @@ Chaque entree dit ce qui a change **et ce qui l'a revele**. La colonne
 | v14 | `hook_height` remplace par `lang_l` + `lang_ang` | la languette devient un levier droit a cap fixe, plus une tangente forcee. Sa longueur (croquis : 10) et son cap pilotent le pied du R et la hauteur totale |
 | v14 | Cotes du croquis sorties dans `docs/target_hook.json` | verite EXTERNE. Le modele sort ses cotes reelles par echo ; `profile_plot` et le viewer superposent cible-vs-reel. Jamais dans un `assert` (regle : un assert garde une coherence interne, pas une mesure) |
 | v14 | Viewer web autonome (`make web`) | juger chaque iteration a l'oeil : three.js embarque + STL en base64 + profil 2D + table cible-vs-reel, dans un seul `index.html` hors-ligne |
+| v15 | **Editeur interactif** (`tools/web/designer.html`) | regler soi-meme les mm et les angles, cible du croquis en pointilles, test d'emboitement du tube en direct, export des valeurs |
+| v15 | Crochet reecrit sur le modele de l'editeur : dos + bras du haut + **ventre en arc a 3 points** + languette | cotes exactes du croquis (bras 15, prof 21,5, ventre 17, bas 10, dos 25, languette 10@-45). Le ventre suit le croquis (profondeur + hauteur) au lieu d'epouser le rayon du tube ; une garde verifie que le tube s'y loge |
+| v15 | Collier ferme repositionne au dos, biseau de languette reduit a une bande | le biseau 40x40 tranchait le ventre a -45 ; le collier bulge vers l'arriere sur la zone du jonc |
 
 ## Deux regressions silencieuses, meme cause
 

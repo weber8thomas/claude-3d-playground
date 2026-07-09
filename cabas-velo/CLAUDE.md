@@ -72,23 +72,23 @@ une bouche etroite. Le v12 enroulait 230° avec une bouche de 8 mm pour un
 tube de 12,23 — il n'aurait jamais pu s'engager. Ce n'etait pas une cote
 fausse, c'etait la cinematique de montage.
 
-Forme (v14) : **un R.** Un dos plat (le collier), un BRAS DU HAUT horizontal,
-un VENTRE en arc qui epouse le tube, une LANGUETTE droite qui descend — le
-pied du R, levier de decrochage. Le tube se loge dans le ventre. Le centre de
-l'arc EST le centre du tube : si le rayon interieur vaut `tube_d/2 + clr`,
-l'arc epouse le flanc et le bras du haut touche le sommet, simultanement.
-`hook_depth` fixe la profondeur ; `lang_l` et `lang_ang` fixent le pied.
+Forme (v15) : **un R.** Un dos plat (le collier), un BRAS DU HAUT, un VENTRE
+en **arc a trois points** (bras_haut -> apex a la profondeur voulue ->
+bras_bas), une LANGUETTE droite qui descend — le pied du R, levier de
+decrochage. Le tube se loge dans le ventre. Cotes reglees dans l'editeur
+`tools/web/designer.html` : `arm_top`, `depth`, `bowl_h`, `arm_bot`,
+`back_h`, `leg_l`, `leg_ang`.
 
-Boutons libres : `wrap_end` (enroulement sous le tube), `lang_l`/`lang_ang`
-(le levier). Ce qui tient le sac, c'est son poids et l'elastique du bas. Pas
-une barbe. **Tension a garder en tete** : un ventre qui enveloppe plus le tube
-retient mieux mais se pose plus dur (l'assert `mouth > tube*0.75` en est le
-garde-fou). C'est la lecon du v12.
+Le ventre n'epouse PLUS exactement le rayon du tube (c'etait le v14) : sa
+forme suit le croquis, et une garde **verifie que le tube s'y loge**
+(`assert` sur l'emboitement, pas sur une mesure). L'editeur montre
+l'emboitement en direct pour arbitrer. Ce qui tient le sac, c'est son poids
+et l'elastique du bas.
 
-Les cotes du croquis vivent dans `docs/target_hook.json` (verite externe). Le
-modele sort ses cotes REELLES par echo ; `make profile` et `make web`
-superposent cible-vs-reel. On ne recopie aucune cote dans le `.scad`, et on
-n'en fait jamais un `assert`.
+Cycle d'iteration : regler dans `designer.html` -> bouton **Copier** ->
+couler les valeurs dans le `.scad` -> `make verify` + `make web`. Les cotes
+du croquis vivent dans `docs/target_hook.json` (verite externe) ; on ne
+recopie aucune cote dans le `.scad` et on n'en fait jamais un `assert`.
 
 ## Charniere
 

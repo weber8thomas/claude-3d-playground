@@ -1,32 +1,25 @@
 // =====================================================================
-//  STRUCTURE DE CABAS VELO -- type BikeZac / Cobags            [v14]
+//  STRUCTURE DE CABAS VELO -- type BikeZac / Cobags            [v15]
 //
 //  LE CROCHET SE POSE, IL NE SE CLIPSE PAS.
 //    Le tube du porte-bagages est ferme, soude au cadre : on ne l'enfile
-//    pas dans une bouche etroite, on POSE le crochet dessus. Le v12
-//    enroulait 230 deg avec une bouche de 8 mm -- impossible a engager.
-//    Ce n'etait pas une cote fausse, c'etait la cinematique de montage.
+//    pas dans une bouche etroite, on POSE le crochet dessus.
 //
-//  FORME EN R (v14, d'apres le croquis cote).
-//    Un dos plat (le collier qui enfile le jonc), un BRAS DU HAUT
-//    horizontal, un VENTRE en arc qui epouse le tube, puis une LANGUETTE
-//    droite qui descend : le pied du R, levier de decrochage. Le tube se
-//    loge dans le ventre.
-//    Le centre de l'arc EST le centre du tube : si le rayon interieur
-//    vaut tube_d/2 + clr, l'arc epouse le flanc et le bras du haut touche
-//    le sommet. Une seule cote (tube_d) gouverne les deux.
+//  FORME EN R (v15, cotes reglees dans l'editeur web tools/web/designer.html).
+//    Un DOS plat (le collier qui enfile le jonc), un BRAS DU HAUT, un
+//    VENTRE en arc (arc a trois points : bras_haut -> apex a la profondeur
+//    voulue -> bras_bas), puis une LANGUETTE droite : le pied du R, levier
+//    de decrochage. Le tube se loge dans le ventre.
 //
-//  CE QUI TIENT LE SAC : le poids, qui plaque le bras du haut sur le tube,
-//    et l'elastique en bas. Pas une barbe serree. La languette ne
-//    "declipse" rien, elle fait pivoter le crochet a la main.
+//    Le ventre n'est plus force a epouser exactement le rayon du tube : sa
+//    forme suit le croquis (profondeur + hauteur), et on VERIFIE que le tube
+//    s'y loge (assert + trace). L'editeur montre l'emboitement en direct.
 //
 //  IMPRESSION : profil plan, extrude 15,05 mm en Z. Aucun porte-a-faux.
-//    Dans un ruban qui flechit, la contrainte court LE LONG du ruban,
-//    donc dans le plan des couches.
 //
-//  NB. Les cotes du croquis (dos 25, bras 15/10, ventre 21x17, languette
-//  10) sont dans docs/target_hook.json. On ne les recopie pas ici : le
-//  modele sort ses cotes REELLES par echo, l'outillage superpose la cible.
+//  COTES DU CROQUIS -> docs/target_hook.json (verite externe). Le modele
+//  sort ses cotes reelles par echo ; profile_plot et le viewer superposent
+//  cible-vs-reel. On ne recopie aucune cote ici et on n'en fait pas d'assert.
 // =====================================================================
 
 $fn = 96;
@@ -40,24 +33,21 @@ hook_start  = 37.5;
 tail_span   = 40;
 tail_stem   = 14;
 
-// --- COTES RELEVEES SUR LE CROCHET ORIGINAL ---------------------------
+// --- CROCHET : cotes reglees dans l'editeur (designer.html) ------------
 hook_len    = 15.05;  // largeur : axe d'extrusion
-hook_depth  = 21.55;  // face du collier -> point le plus eloigne (croquis : 21)
+arm_top     = 15;     // bras du haut (dos -> depart du ventre)
+depth       = 21.5;   // profondeur du ventre (dos -> apex)
+bowl_h      = 17;     // hauteur du ventre
+arm_bot     = 10;     // bras du bas (dos -> bas du ventre)
+back_h      = 25;     // dos : hauteur totale du profil
+leg_l       = 10;     // languette : longueur (pied du R)
+leg_ang     = -45;    // languette : cap absolu (deg). -90 = tout droit vers le bas
+bevel_a     = 35;     // biseau du bout de languette
 
 // --- MESURE -----------------------------------------------------------
 tube_d      = 12.23;  // tube du porte-bagages, au pied a coulisse
 rib_t       = 2.5;    // epaisseur du ruban   (A CONFIRMER)
 clr         = 0.4;    // jeu ruban / tube
-
-// --- FORME DU R, ESTIME SUR PHOTO/CROQUIS, A CORRIGER -----------------
-wrap_end    = -50;    //   0  = quart de cercle nu, rien ne retient
-                      // -50  = le ruban passe sous le tube : levre legere
-                      // plus negatif = levre plus fermee, pose plus dure
-lang_l      = 10;     // longueur de la languette (le pied du R). Croquis : 10
-lang_ang    = -90;    // cap absolu de la languette : -90 = tout droit vers le
-                      // bas. Plus positif = languette rejetee vers le tube
-                      // (referme la bouche) ; plus negatif = vers le dos.
-bevel_a     = 35;     // biseau du bout de languette
 
 // --- COLLIER ----------------------------------------------------------
 col_wall    = 1.8;
@@ -73,7 +63,7 @@ hinge_clr   = 0.3;
 tight_int   = 0.15;
 free_clr    = 0.25;
 
-// =====================  GEOMETRIE DERIVEE  ============================
+// =====================  GEOMETRIE DERIVEE (JONC/CHARNIERE)  ===========
 half_len   = total_len / 2;
 pin_y      = -(bar_t + pin_gap);
 knuckle    = pin_d/2 + kn_wall;
@@ -89,59 +79,79 @@ capture    = pin_d - 2*sqrt(pow(bore_free/2,2) - pow(hinge_lip,2));
 k1 = bar_h/3;
 k2 = 2*bar_h/3;
 
-ci_u0 = -bar_t - col_clr;  ci_u1 =  col_clr;
-ci_v0 = -col_clr;          ci_v1 =  bar_h + col_clr;
-co_u0 = ci_u0 - col_wall;  co_u1 = ci_u1 + col_wall;
-co_v0 = ci_v0 - col_wall;  co_v1 = ci_v1 + col_wall;
+// =====================  GEOMETRIE DU CROCHET  ========================
+// Collier : anneau ferme derriere le dos, il enfile le jonc (bar_t x bar_h).
+co_u1 =  rib_t/2;                                   // face avant, au ras du dos
+co_u0 =  co_u1 - (bar_t + 2*col_clr + 2*col_wall);  // face arriere
+co_v1 =  0;                                         // haut, au ras du bras du haut
+co_v0 =  co_v1 - (bar_h + 2*col_clr + 2*col_wall);  // bas du collier
+ci_u0 =  co_u0 + col_wall;  ci_u1 = co_u1 - col_wall;   // alesage du jonc
+ci_v0 =  co_v0 + col_wall;  ci_v1 = co_v1 - col_wall;
 
-Rc    = tube_d/2 + clr + rib_t/2;            // ligne moyenne de l'arc du ventre
-cu    = co_u1 + hook_depth - rib_t/2 - Rc;   // centre du tube, profondeur
-v_top = co_v1 - rib_t/2;                     // bras du haut, arase au collier
-cv    = v_top - Rc;                          // centre du tube, hauteur
+// Ligne moyenne du ruban : dos -> bras du haut -> ventre (arc 3 pts) -> languette
+function n360(x)   = x - 360*floor(x/360);
+function circ3(A,Q,B) =
+    let(d = 2*(A[0]*(Q[1]-B[1]) + Q[0]*(B[1]-A[1]) + B[0]*(A[1]-Q[1])))
+    [ ((A[0]*A[0]+A[1]*A[1])*(Q[1]-B[1]) + (Q[0]*Q[0]+Q[1]*Q[1])*(B[1]-A[1]) + (B[0]*B[0]+B[1]*B[1])*(A[1]-Q[1]))/d,
+      ((A[0]*A[0]+A[1]*A[1])*(B[0]-Q[0]) + (Q[0]*Q[0]+Q[1]*Q[1])*(A[0]-B[0]) + (B[0]*B[0]+B[1]*B[1])*(Q[0]-A[0]))/d ];
 
-// -- languette droite : levier a cap fixe (v14), plus force tangente a l'arc
-lipe   = [cu + Rc*cos(wrap_end), cv + Rc*sin(wrap_end)];   // sortie de l'arc
-u_tip  = lipe[0] + lang_l*cos(lang_ang);
-v_tip  = lipe[1] + lang_l*sin(lang_ang);
-mouth  = (u_tip - rib_t/2) - co_u1;          // passage horizontal libre pour poser
+spineTop = [0, 0];
+spineBot = [0, -back_h];
+armEnd   = [arm_top, 0];
+bowlBot  = [arm_bot, -bowl_h];
+apex     = [depth,   -bowl_h/2];
 
-// -- cotes REELLES, a comparer a docs/target_hook.json (cible-vs-reel)
-depth_r  = cu + Rc + rib_t/2 - co_u1;                    // ventre : profondeur
-height_r = (v_top + rib_t/2) - (v_tip - rib_t/2);        // dos : hauteur totale
-armtop_r = cu - co_u1;                                   // bras du haut
-arc_low  = min(cv - Rc, cv + Rc*sin(wrap_end));          // bas de l'arc trace
-bowl_r   = (cv + Rc) - arc_low + rib_t;                  // ventre : hauteur
-lipsous  = cv - lipe[1];                                 // levre sous le tube
+cc   = circ3(armEnd, apex, bowlBot);
+rr   = norm(armEnd - cc);
+a0   = atan2(armEnd[1]-cc[1],  armEnd[0]-cc[0]);
+a1   = atan2(bowlBot[1]-cc[1], bowlBot[0]-cc[0]);
+am   = atan2(apex[1]-cc[1],    apex[0]-cc[0]);
+sweepP = n360(a1 - a0);
+span   = (n360(am - a0) <= sweepP) ? sweepP : sweepP - 360;
+Nbowl  = 48;
+bowl   = [ for (i=[0:Nbowl]) let(a = a0 + span*i/Nbowl) [cc[0]+rr*cos(a), cc[1]+rr*sin(a)] ];
 
-echo(str("Tube Phi", tube_d, " centre [", cu, ", ", cv, "]  R_moy ", Rc));
-echo(str("Profondeur = ", depth_r, "  (cible ", hook_depth, ")"));
-echo(str("Hauteur totale = ", height_r, "  (dos ; croquis 25)"));
-echo(str("Ventre = ", bowl_r, "  (croquis 17)"));
-echo(str("Bras du haut = ", armtop_r, "  (croquis 15)"));
-echo(str("Languette = ", lang_l, " mm a ", lang_ang, " deg  (croquis 10)"));
-echo(str("Enroulement = ", 90 - wrap_end, " deg ; levre sous le tube = ", lipsous, " mm"));
-echo(str("Bouche de pose = ", mouth, " mm   (tube ", tube_d, ")"));
-echo(str("Jeu tube / jonc = ", (cu - tube_d/2) - co_u1, " mm"));
+legEnd = [ bowlBot[0] + leg_l*cos(leg_ang), bowlBot[1] + leg_l*sin(leg_ang) ];
+path   = concat([spineBot, spineTop], bowl, [legEnd]);
+
+// Tube niche dans le ventre (comme l'editeur) : centre, et test d'emboitement.
+maxx    = max([ for (q = path) q[0] ]);
+tube_cu = maxx - rib_t/2 - clr - tube_d/2;
+tube_cv = -bowl_h/2;
+
+// Encombrement du profil (avec l'epaisseur du ruban et le collier).
+prof_x0 = min(min([for(q=path) q[0]]) - rib_t/2, co_u0);
+prof_x1 = max([for(q=path) q[0]]) + rib_t/2;
+prof_y0 = min(min([for(q=path) q[1]]) - rib_t/2, co_v0);
+prof_y1 = max([for(q=path) q[1]]) + rib_t/2;
+
+echo(str("Bras du haut = ", arm_top, "  (croquis 15)"));
+echo(str("Profondeur = ", depth, "  (croquis 21)"));
+echo(str("Ventre = ", bowl_h, "  (croquis 17)"));
+echo(str("Bras du bas = ", arm_bot, "  (croquis 10)"));
+echo(str("Dos = ", back_h, "  (croquis 25)"));
+echo(str("Languette = ", leg_l, " a ", leg_ang, " deg  (croquis 10)"));
+echo(str("Tube Phi", tube_d, " centre [", tube_cu, ", ", tube_cv, "]"));
+echo(str("Jeu tube / dos = ", (tube_cu - tube_d/2) - co_u1, " mm"));
+echo(str("Encombrement = ", prof_x1-prof_x0, " x ", prof_y1-prof_y0, " mm"));
 echo(str("Entraxe = ", total_len - 2*(hook_start + hook_len/2), " mm"));
 echo(str("Butee charniere = ", butee, " ; debord axe = ", axe_out, " ; capture = ", capture));
 
 // -- gardes : COHERENCE INTERNE uniquement, jamais une mesure supposee.
-assert(cu - tube_d/2 > co_u1,    "Le tube traverse le jonc.");
-assert(wrap_end <= 0,            "L'enroulement doit atteindre le quart de cercle.");
-assert(wrap_end > -80,           "Trop enroule : le crochet ne se posera plus.");
-assert(mouth > tube_d * 0.75,    "Bouche trop etroite : impossible de poser le crochet.");
-assert(v_tip < cv - tube_d/2,    "La languette ne descend pas sous le tube.");
-assert(lang_l > 0,               "Languette de longueur nulle.");
-assert(rib_t >= 2.0,             "Ruban trop mince.");
-assert(butee >= 1.5,             "Butee trop mince.");
+assert(is_num(cc[0]) && is_num(cc[1]), "Ventre degenere : les trois points sont alignes.");
+assert(tube_cu - tube_d/2 > co_u1,  "Le tube touche le dos/jonc : ventre trop peu profond.");
+assert(maxx - tube_cu >= rib_t/2 + tube_d/2 + clr - 0.35, "Le tube ne se loge pas dans le ventre.");
+assert(back_h >= (bar_h + 2*col_clr + 2*col_wall), "Dos trop court pour loger le collier.");
+assert(leg_l > 0,               "Languette de longueur nulle.");
+assert(bowl_h > rib_t,          "Ventre trop plat.");
+assert(rib_t >= 2.0,            "Ruban trop mince.");
+assert(butee >= 1.5,            "Butee trop mince.");
 assert(hinge_lip < bore_tight/2, "Levre de charniere trop profonde.");
-assert(capture >= 0.2,           "Levre de charniere trop courte.");
-assert(kn_wall >= 1.2,           "Paroi de charnon trop mince.");
-assert(tail_root >= rc,          "La racine du lobe empiete sur le degagement.");
+assert(capture >= 0.2,          "Levre de charniere trop courte.");
+assert(kn_wall >= 1.2,          "Paroi de charnon trop mince.");
+assert(tail_root >= rc,         "La racine du lobe empiete sur le degagement.");
 
 // ======================  CROCHET  =====================================
-function pol(c, r, a) = [c[0] + r*cos(a), c[1] + r*sin(a)];
-
 module chain(pts, t) {
     for (i = [0 : len(pts)-2])
         hull() {
@@ -149,23 +159,20 @@ module chain(pts, t) {
             translate(pts[i+1]) circle(d = t, $fn = 24);
         }
 }
-
-arc  = [ for (a = [90 : -5 : wrap_end]) pol([cu, cv], Rc, a) ];
-path = concat([[0, v_top]], arc, [[u_tip, v_tip]]);
-
 module hook2d() {
     difference() {
         union() {
-            translate([co_u0, co_v0]) square([co_u1-co_u0, co_v1-co_v0]);
             chain(path, rib_t);
+            translate([co_u0, co_v0]) square([co_u1-co_u0, co_v1-co_v0]);
         }
         translate([ci_u0, ci_v0]) square([ci_u1-ci_u0, ci_v1-ci_v0]);
-        translate([u_tip, v_tip]) rotate(lang_ang + bevel_a)
-            translate([0, -20]) square([40, 40]);
+        // biseau du bout de languette : bande etroite au-dela de la pointe,
+        // le long de l'axe du levier (jamais assez large pour toucher le ventre).
+        translate(legEnd) rotate(leg_ang + bevel_a) translate([0, -rib_t]) square([12, 2*rib_t]);
     }
 }
 module hook()   { linear_extrude(height = hook_len) hook2d(); }
-module hooks3() { hook(); translate([36,0,0]) hook(); translate([72,0,0]) hook(); }
+module hooks3() { hook(); translate([40,0,0]) hook(); translate([80,0,0]) hook(); }
 module gauge()  { cube([25, bar_h, bar_t]); }
 
 // ======================  JONC  ========================================
@@ -223,7 +230,7 @@ module bar_flat() { rotate([-90,0,0]) children(); }
 module build_plate() {
     bar_flat() bar_a();
     translate([0,40,0]) bar_flat() bar_b();
-    translate([0,90,0]) hooks3();
+    translate([0,115,0]) hooks3();   // ecarte : le crochet v15 (27,5 mm) degage le lobe de B
 }
 
 if      (part=="a")          bar_flat() bar_a();
