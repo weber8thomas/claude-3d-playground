@@ -1,8 +1,21 @@
 <!doctype html>
-<meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=cabas-velo/docs/viewer.html">
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>cabas-velo</title>
-<body style="font:16px system-ui,sans-serif;margin:3rem">
-  <p>Redirection vers le viewer du crochet…</p>
-  <p><a href="cabas-velo/docs/viewer.html">→ cabas-velo — viewer 3D (crochet R)</a></p>
-</body>
+<style>
+  body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:3rem auto;padding:0 1rem;color:#222}
+  @media(prefers-color-scheme:dark){body{background:#111;color:#eee}a{color:#5fd3a0}}
+  h1{font-size:22px} .card{display:block;border:1px solid #8884;border-radius:10px;
+     padding:14px 16px;margin:12px 0;text-decoration:none;color:inherit}
+  .card:hover{border-color:#1D9E75} .card b{color:#1D9E75} small{opacity:.7}
+</style></head>
+<body>
+  <h1>cabas-velo — crochet imprimé 3D</h1>
+  <p>Armature type BikeZac : jonc pliable + crochets porte-bagages. Le crochet est en forme de <b>R</b>.</p>
+  <a class="card" href="cabas-velo/tools/web/designer.html">
+    <b>→ Éditeur interactif</b> (ajuster mm & angles)<br>
+    <small>Règle les distances et les angles, superpose la cible du croquis, teste l'emboîtement du tube, exporte les valeurs.</small></a>
+  <a class="card" href="cabas-velo/docs/viewer.html">
+    <b>→ Viewer 3D validé</b> (STL rendus par OpenSCAD)<br>
+    <small>Tourne/zoome chaque pièce de l'itération courante, avec cible-vs-réel et profil 2D.</small></a>
+</body></html>

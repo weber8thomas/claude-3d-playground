@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cabas-velo — éditeur de crochet (R)</title>
+<style>
+  :root{color-scheme:light dark}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.45 system-ui,sans-serif;display:flex;height:100vh;
+       overflow:hidden;background:#141414;color:#eee}
+  #stage{flex:1;position:relative;background:#fafafa}
+  #cv{display:block;width:100%;height:100%}
+  #hint{position:absolute;top:10px;left:12px;font-size:12px;color:#555;
+        background:rgba(255,255,255,.7);padding:4px 8px;border-radius:6px}
+  aside{width:340px;max-width:46vw;background:#1b1b1b;border-left:1px solid #333;
+        padding:14px 16px;overflow-y:auto}
+  h1{font-size:16px;margin:0 0 2px}
+  .sub{color:#8a8a8a;font-size:12px;margin-bottom:12px}
+  h2{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#7fd7ad;
+     margin:16px 0 6px;border-bottom:1px solid #2a2a2a;padding-bottom:3px}
+  .row{display:grid;grid-template-columns:82px 1fr 58px;gap:7px;align-items:center;
+       margin:5px 0}
+  .row label{font-size:12px;color:#cfcfcf}
+  .row input[type=range]{width:100%}
+  .row input[type=number]{width:100%;background:#262626;color:#eee;border:1px solid #3a3a3a;
+       border-radius:5px;padding:3px 5px;font-size:12px;text-align:right}
+  .unit{color:#777;font-size:11px}
+  .chk{display:flex;gap:8px;align-items:center;font-size:12px;color:#bbb;margin:8px 0}
+  .fit{margin:10px 0;padding:8px 10px;border-radius:7px;font-size:12px}
+  .fit.ok{background:#183a2a;color:#7ee0b0}
+  .fit.bad{background:#4a1f1f;color:#ffb3aa}
+  textarea{width:100%;height:132px;background:#0e0e0e;color:#bfe;border:1px solid #2a2a2a;
+       border-radius:6px;padding:8px;font:11px/1.4 ui-monospace,monospace;resize:vertical}
+  button{background:#1D9E75;color:#04120c;border:0;border-radius:6px;padding:6px 12px;
+       font-weight:600;cursor:pointer;font-size:12px;margin-top:6px}
+  button.ghost{background:#2a2a2a;color:#ddd;margin-left:6px}
+  .legend{font-size:11px;color:#8a8a8a;margin-top:4px}
+  .tgt{color:#c58af0}
+</style></head>
+<body>
+  <div id="stage"><canvas id="cv"></canvas>
+    <div id="hint">Profil 2D — 1 carreau = 5 mm. Cible du croquis en pointillés violets.</div>
+  </div>
+  <aside>
+    <h1>Éditeur de crochet <b>R</b></h1>
+    <div class="sub">Règle les mm et les angles ; le profil suit en direct. Quand ça
+      colle, clique <b>Copier</b> et envoie-moi le bloc — je le coule dans le .scad
+      (make verify) et je régénère le viewer 3D validé.</div>
+
+    <h2>Ruban / tube</h2>
+    <div id="g_rib"></div>
+    <h2>Bras & dos</h2>
+    <div id="g_arm"></div>
+    <h2>Ventre</h2>
+    <div id="g_bowl"></div>
+    <h2>Languette (pied du R)</h2>
+    <div id="g_leg"></div>
+
+    <div class="chk"><input type="checkbox" id="showTarget" checked>
+      <label for="showTarget">Afficher la cible du croquis (pointillés)</label></div>
+    <div class="chk"><input type="checkbox" id="showTube" checked>
+      <label for="showTube">Afficher le tube Ø & le test d'emboîtement</label></div>
+
+    <div id="fit" class="fit"></div>
+
+    <h2>Export → à me renvoyer</h2>
+    <textarea id="out" readonly></textarea>
+    <button id="copy">Copier</button>
+    <button id="reset" class="ghost">Cible du croquis</button>
+    <div class="legend">Encombrement (bbox) : <span id="bbox"></span></div>
+  </aside>
+
+<script>
+// ---- cotes CIBLE (croquis) : reference, dessinees en pointilles violets ----
+const TARGET = { arm_top:15, depth:21, bowl_h:17, arm_bot:10, back_h:25, leg_l:10, leg_ang:-45,
+                 tube_d:12.23, rib_t:2.5, clr:0.4 };
+
+// ---- parametres editables ----
+const P = Object.assign({}, TARGET);
+
+// ---- definition des controles (clef, label, min, max, pas, groupe) ----
+const CTRL = [
+  ['rib_t','épaisseur ruban',1.5,5,0.1,'g_rib'],
+  ['tube_d','tube Ø',6,20,0.01,'g_rib'],
+  ['clr','jeu tube',0,1.5,0.05,'g_rib'],
+  ['arm_top','bras haut',5,30,0.5,'g_arm'],
+  ['back_h','dos (hauteur)',12,40,0.5,'g_arm'],
+  ['depth','profondeur ventre',10,35,0.5,'g_bowl'],
+  ['bowl_h','hauteur ventre',6,30,0.5,'g_bowl'],
+  ['arm_bot','bras bas',0,25,0.5,'g_bowl'],
+  ['leg_l','longueur',0,25,0.5,'g_leg'],
+  ['leg_ang','angle (°)',-180,10,1,'g_leg'],
+];
+
+function mkControls(){
+  for(const [k,lbl,mn,mx,st,g] of CTRL){
+    const row=document.createElement('div'); row.className='row';
+    row.innerHTML=`<label title="${k}">${lbl}</label>`
+      +`<input type=range min=${mn} max=${mx} step=${st} value=${P[k]} data-k="${k}">`
+      +`<input type=number min=${mn} max=${mx} step=${st} value=${P[k]} data-k="${k}">`;
+    document.getElementById(g).appendChild(row);
+  }
+  document.querySelectorAll('input[data-k]').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      const k=e.target.dataset.k, v=parseFloat(e.target.value);
+      if(isNaN(v))return; P[k]=v;
+      document.querySelectorAll(`input[data-k="${k}"]`).forEach(o=>{if(o!==e.target)o.value=v;});
+      draw();
+    });
+  });
+  document.getElementById('showTarget').onchange=draw;
+  document.getElementById('showTube').onchange=draw;
+  document.getElementById('reset').onclick=()=>{Object.assign(P,TARGET);syncInputs();draw();};
+  document.getElementById('copy').onclick=()=>{
+    navigator.clipboard.writeText(document.getElementById('out').value);
+    const b=document.getElementById('copy'); b.textContent='Copié ✓'; setTimeout(()=>b.textContent='Copier',1200);
+  };
+}
+function syncInputs(){ document.querySelectorAll('input[data-k]').forEach(o=>o.value=P[o.dataset.k]); }
+
+// ---- geometrie : centerline du ruban ----
+function circleFrom3(A,Pp,B){ // cercle par 3 points -> {c,r} ou null si colineaire
+  const ax=A[0],ay=A[1],bx=Pp[0],by=Pp[1],cx=B[0],cy=B[1];
+  const d=2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by));
+  if(Math.abs(d)<1e-9)return null;
+  const ux=((ax*ax+ay*ay)*(by-cy)+(bx*bx+by*by)*(cy-ay)+(cx*cx+cy*cy)*(ay-by))/d;
+  const uy=((ax*ax+ay*ay)*(cx-bx)+(bx*bx+by*by)*(ax-cx)+(cx*cx+cy*cy)*(bx-ax))/d;
+  return {c:[ux,uy], r:Math.hypot(ax-ux,ay-uy)};
+}
+function bowlArc(A,B,depth){
+  const mid=[depth, (A[1]+B[1])/2];            // 3e point : apex a la profondeur voulue
+  const cir=circleFrom3(A,mid,B);
+  if(!cir)return [A,B];
+  const [cx,cy]=cir.c, r=cir.r;
+  let a0=Math.atan2(A[1]-cy,A[0]-cx), a1=Math.atan2(B[1]-cy,B[0]-cx);
+  const am=Math.atan2(mid[1]-cy,mid[0]-cx);
+  // choisir le sens qui passe par l'apex
+  const norm=x=>{while(x<=-Math.PI)x+=2*Math.PI;while(x>Math.PI)x-=2*Math.PI;return x;};
+  let span=norm(a1-a0);
+  if(!between(a0,am,a0+span)) span = span>0? span-2*Math.PI : span+2*Math.PI;
+  const pts=[]; const N=48;
+  for(let i=0;i<=N;i++){const a=a0+span*i/N; pts.push([cx+r*Math.cos(a), cy+r*Math.sin(a)]);}
+  return pts;
+}
+function between(a,x,b){ // x dans l'arc [a..b] (sens direct)
+  const t=(x-a), tb=(b-a); const n=v=>{v%= (2*Math.PI); if(v<0)v+=2*Math.PI; return v;};
+  return n(t)<=n(tb)+1e-6;
+}
+function geom(p){
+  const backTop=[0,0], backBot=[0,-p.back_h], armEnd=[p.arm_top,0], bowlBot=[p.arm_bot,-p.bowl_h];
+  const arc=bowlArc(armEnd,bowlBot,p.depth);
+  const legEnd=[bowlBot[0]+p.leg_l*Math.cos(p.leg_ang*Math.PI/180),
+                bowlBot[1]+p.leg_l*Math.sin(p.leg_ang*Math.PI/180)];
+  const path=[backBot,backTop,armEnd,...arc,legEnd];
+  // tube niche dans le ventre
+  let maxx=-1e9; for(const q of path) maxx=Math.max(maxx,q[0]);
+  const tube={c:[maxx - p.rib_t/2 - p.clr - p.tube_d/2, -p.bowl_h/2], r:p.tube_d/2};
+  // bbox (avec epaisseur)
+  let xs=path.map(q=>q[0]), ys=path.map(q=>q[1]);
+  const bb={x0:Math.min(...xs)-p.rib_t/2, x1:Math.max(...xs)+p.rib_t/2,
+            y0:Math.min(...ys)-p.rib_t/2, y1:Math.max(...ys)+p.rib_t/2};
+  return {path,tube,maxx,legEnd,backBot,backTop,armEnd,bowlBot,bb};
+}
+
+// ---- rendu ----
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let SC=1, OX=0, OY=0;
+function fit(g){
+  const W=cv.clientWidth,H=cv.clientHeight; cv.width=W; cv.height=H;
+  const pad=42;
+  const x0=-8, x1=Math.max(P.depth,g.maxx)+16, y0=-P.back_h-8, y1=10;
+  SC=Math.min((W-2*pad)/(x1-x0),(H-2*pad)/(y1-y0));
+  OX=pad-x0*SC; OY=H-pad+y0*SC;   // y up -> ecran
+}
+const TX=(x)=>OX+x*SC, TY=(y)=>OY-y*SC;
+function grid(){
+  ctx.save();ctx.strokeStyle='#e2e2e2';ctx.lineWidth=1;ctx.beginPath();
+  const W=cv.width,H=cv.height;
+  for(let x=-40;x<=60;x+=5){ctx.moveTo(TX(x),0);ctx.lineTo(TX(x),H);}
+  for(let y=-50;y<=20;y+=5){ctx.moveTo(0,TY(y));ctx.lineTo(W,TY(y));}
+  ctx.stroke();
+  ctx.strokeStyle='#c9c9c9';ctx.beginPath();
+  ctx.moveTo(TX(0),0);ctx.lineTo(TX(0),H);ctx.moveTo(0,TY(0));ctx.lineTo(W,TY(0));ctx.stroke();
+  ctx.restore();
+}
+function strokePath(path,w,color,alpha,dash){
+  ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=w*SC;
+  ctx.lineJoin='round';ctx.lineCap='round';if(dash)ctx.setLineDash(dash);
+  ctx.beginPath();ctx.moveTo(TX(path[0][0]),TY(path[0][1]));
+  for(let i=1;i<path.length;i++)ctx.lineTo(TX(path[i][0]),TY(path[i][1]));
+  ctx.stroke();ctx.restore();
+}
+function dim(a,b,txt,color){
+  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1;ctx.setLineDash([]);
+  const ax=TX(a[0]),ay=TY(a[1]),bx=TX(b[0]),by=TY(b[1]);
+  ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
+  const ah=(x,y,dx,dy)=>{const l=Math.hypot(dx,dy);dx/=l;dy/=l;
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+7*dx-4*dy,y+7*dy+4*dx);
+    ctx.lineTo(x+7*dx+4*dy,y+7*dy-4*dx);ctx.closePath();ctx.fill();};
+  ah(ax,ay,bx-ax,by-ay);ah(bx,by,ax-bx,ay-by);
+  ctx.font='12px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+  const mx=(ax+bx)/2,my=(ay+by)/2;
+  ctx.fillStyle='#fff';ctx.strokeStyle='#fff';const tw=ctx.measureText(txt).width;
+  ctx.fillRect(mx-tw/2-3,my-9,tw+6,18);ctx.fillStyle=color;ctx.fillText(txt,mx,my);
+  ctx.restore();
+}
+function draw(){
+  const g=geom(P); fit(g);
+  ctx.clearRect(0,0,cv.width,cv.height); grid();
+
+  // cible (croquis) en pointilles violets
+  if(document.getElementById('showTarget').checked){
+    const gt=geom(TARGET);
+    strokePath(gt.path, TARGET.rib_t, '#a24be0', .45, [7,5]);
+  }
+  // tube
+  if(document.getElementById('showTube').checked){
+    ctx.save();ctx.beginPath();
+    ctx.arc(TX(g.tube.c[0]),TY(g.tube.c[1]),g.tube.r*SC,0,7);
+    ctx.fillStyle='rgba(240,153,123,.55)';ctx.fill();
+    ctx.strokeStyle='#993C1D';ctx.lineWidth=1.4;ctx.stroke();
+    ctx.fillStyle='#5a2413';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText('tube Ø'+P.tube_d.toFixed(2),TX(g.tube.c[0]),TY(g.tube.c[1]));
+    ctx.restore();
+  }
+  // jonc (reference)
+  ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle='#888';ctx.lineWidth=1;
+  ctx.strokeRect(TX(0.8),TY(-1),(5)*SC,(-11)*SC);
+  ctx.setLineDash([]);ctx.fillStyle='#999';ctx.font='10px system-ui';ctx.textAlign='left';
+  ctx.fillText('jonc',TX(1.3),TY(-6));ctx.restore();
+
+  // profil courant
+  strokePath(g.path, P.rib_t, '#1D9E75', .95);
+
+  // cotes
+  const top=0;
+  dim([0,top+3.5],[P.arm_top,top+3.5],'bras '+P.arm_top,'#1663c7');
+  dim([0,top+7],[P.depth,top+7],'prof '+P.depth,'#1663c7');
+  dim([-6,top],[-6,-P.back_h],'dos '+P.back_h,'#1663c7');
+  dim([g.maxx+3, -P.bowl_h/2+P.bowl_h/2],[g.maxx+3,-P.bowl_h/2-P.bowl_h/2],'ventre '+P.bowl_h,'#c0392b');
+  dim([0,-P.bowl_h],[P.arm_bot,-P.bowl_h],'bas '+P.arm_bot,'#1663c7');
+  dim(g.bowlBot,g.legEnd,'lang '+P.leg_l,'#993C1D');
+
+  // fit + export
+  const clearsBack = g.tube.c[0]-g.tube.r > 1.0;
+  const insideBowl = (g.maxx - g.tube.c[0]) >= (P.rib_t/2 + g.tube.r + P.clr - 0.3);
+  const ok = clearsBack && insideBowl;
+  const fb=document.getElementById('fit');
+  fb.className='fit '+(ok?'ok':'bad');
+  fb.textContent = ok ? '✓ le tube Ø'+P.tube_d.toFixed(2)+' se loge dans le ventre et dégage le dos'
+    : '⚠ '+(!clearsBack?'le tube touche le dos/jonc. ':'')+(!insideBowl?'le ventre est trop peu profond pour le tube.':'');
+  document.getElementById('bbox').textContent =
+    (g.bb.x1-g.bb.x0).toFixed(1)+' × '+(g.bb.y1-g.bb.y0).toFixed(1)+' mm (× 15.05 extrudé)';
+  document.getElementById('out').value =
+`// designer -> valeurs a couler dans src/cabas_velo.scad
+tube_d = ${P.tube_d};  clr = ${P.clr};  rib_t = ${P.rib_t};
+arm_top = ${P.arm_top};  depth = ${P.depth};  bowl_h = ${P.bowl_h};  arm_bot = ${P.arm_bot};
+back_h = ${P.back_h};  leg_l = ${P.leg_l};  leg_ang = ${P.leg_ang};
+// tube loge: ${ok?'oui':'NON'}`;
+}
+mkControls(); draw();
+addEventListener('resize',draw);
+</script>
+</body></html>
