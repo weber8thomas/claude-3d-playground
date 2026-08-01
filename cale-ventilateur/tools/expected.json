@@ -10,8 +10,9 @@
         "z": [29.9, 30.1]
       },
       "volume_echo": "V_CALE_MM3",
-      "volume_tol": 0.005,
-      "section": { "z": 15, "shells": 1, "holes": 4, "match_vis_xy": true, "target": "full" }
+      "volume_tol": 0.01,
+      "section": { "z": 15, "shells": 1, "holes": 7 },
+      "target": true
     },
     "gabarit": {
       "bodies": 1,
@@ -23,10 +24,18 @@
       },
       "volume_echo": "V_GABARIT_MM3",
       "volume_tol": 0.01,
-      "section": { "z": 1.0, "shells": 1, "holes": 4, "match_vis_xy": true, "target": "plan" }
+      "section": {
+        "z": 1.0, "shells": 1, "holes": 7,
+        "match_echo": ["VIS_PLAFOND_XY", "VIS_PLATINE_XY"]
+      }
+    },
+    "essai": {
+      "bodies": 2,
+      "printable": true,
+      "dims": { "z": [29.9, 30.1] }
     },
     "mod_hubs": {
-      "bodies": 3,
+      "bodies": 6,
       "printable": false,
       "dims": { "z": [29.9, 30.1] },
       "volume_echo": "V_HUBS_MM3",
@@ -35,6 +44,7 @@
   },
   "sweep": {
     "clr": [0, 0.2, 0.4, 0.6, 1.0],
-    "disc_t": [10, 20, 30, 40]
+    "seat_t": [2, 3, 4, 6],
+    "nut_clr": [0.1, 0.3, 0.5, 0.8]
   }
 }

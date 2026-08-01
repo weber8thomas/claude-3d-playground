@@ -1,22 +1,37 @@
 {
-  "_": "VERITE EXTERNE -- la demande, telle qu'elle a ete formulee. Ces cotes ne",
-  "__": "sont recopiees NULLE PART dans le .scad : verify.py mesure le maillage et",
-  "___": "le confronte a ce fichier. C'est la seule garde capable d'attraper un",
-  "____": "cercle de percage faux -- volume, bbox et echos restent identiques quand",
-  "_____": "bolt_r derape, parce qu'ils en derivent tous. Voir CLAUDE.md.",
+  "_": "VERITE EXTERNE -- la demande, telle qu'elle a ete formulee et arbitree.",
+  "__": "Ces cotes ne sont recopiees NULLE PART dans le .scad : verify.py mesure",
+  "___": "le maillage et le confronte a ce fichier. C'est la seule garde capable",
+  "____": "d'attraper un cercle de percage faux -- volume, bbox et echos restent",
+  "_____": "identiques quand bolt_r derape, parce qu'ils en derivent tous.",
+  "______": "Voir CLAUDE.md.",
 
   "disc_d": 150,
   "disc_t": 30,
+  "cable_d": 25,
+
   "n_holes": 3,
   "hole_d": 6,
   "edge_margin": 25,
-  "edge_margin_ref": "du BORD DU TROU au bord du disque (confirme avec l'utilisateur)",
-  "cable_d": 25,
+  "edge_margin_ref": "du BORD DU TROU au bord du disque",
   "triangle": "equilateral",
+
+  "deux_temps": "la cale se visse au plafond, la platine se visse sous la cale",
+  "offset_ang": 60,
+  "offset_ang_ref": "decalage entre le triangle plafond et le triangle platine",
+
+  "vis_plafond_l": 30,
+  "ancrage_mini": 25,
+  "ancrage_ref": "avec les vis existantes de 30 mm, ce qui doit rester dans le plafond",
+
+  "ecrou": "M6 DIN 934",
+  "ecrou_s": 10,
+  "ecrou_h": 5,
 
   "tol": {
     "longueur": 0.5,
     "angle": 0.5,
-    "jeu_percage": [0.0, 1.0]
+    "jeu_percage": [0.0, 1.0],
+    "jeu_ecrou": [0.1, 0.8]
   }
 }

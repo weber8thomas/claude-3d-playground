@@ -1,4 +1,4 @@
-PARTS := cale gabarit mod_hubs
+PARTS := cale gabarit essai mod_hubs
 SRC   := src/cale_ventilateur.scad
 
 .PHONY: all verify stl export web serve params clean help
@@ -29,7 +29,8 @@ build/%.stl: $(SRC) | build
 	@echo "  -> $@"
 
 params:            ## Afficher toutes les cotes derivees
-	@openscad -o /dev/null -D 'part="cale"' $(SRC) 2>&1 | sed -n 's/^ECHO: "\(.*\)"$$/  \1/p'
+	@openscad --export-format=stl -o /dev/null -D 'part="cale"' $(SRC) 2>&1 \
+	  | sed -n 's/^ECHO: "\(.*\)"$$/  \1/p'
 
 build:
 	@mkdir -p build

@@ -24,7 +24,7 @@ ROOT   = pathlib.Path(__file__).resolve().parent.parent
 SRC    = ROOT / "src" / "cale_ventilateur.scad"
 BUILD  = ROOT / "build"
 VENDOR = ROOT.parent / "cabas-velo" / "tools" / "web" / "vendor"
-PARTS  = ["cale", "gabarit", "mod_hubs"]
+PARTS  = ["cale", "gabarit", "essai", "mod_hubs"]
 
 
 def sh(cmd):
@@ -47,29 +47,64 @@ def render_all():
 
 
 def measured():
-    """CIBLE vs REEL. Le reel est MESURE sur le maillage (meme code que la
-    garde 7), pas lu dans le .scad."""
+    """CIBLE vs REEL. Le reel est MESURE sur le maillage, par le meme code que
+    la garde 7 de verify.py -- jamais lu dans le .scad, ce serait circulaire.
+
+    Deux coupes, comme la garde 7 : dans le plafond de percage les vis
+    PLAFOND sont des trous nus et les vis PLATINE des logements d'ecrou ;
+    a mi-hauteur c'est l'inverse."""
     import numpy as np
     m = V.trimesh.load(BUILD / "cale.stl")
-    _, holes, r_out = V.holes_at(m, 15.0)
-    cable = min(holes, key=lambda h: np.hypot(h[0], h[1]))
-    vis = [h for h in holes if h is not cable]
-    r_bolt = float(np.mean([np.hypot(x, y) for x, y, _ in vis]))
-    d_vis = float(np.mean([2 * r for _, _, r in vis]))
-    angs = sorted(np.degrees(np.arctan2(y, x)) % 360 for x, y, _ in vis)
-    ecarts = [(angs[(i + 1) % 3] - angs[i]) % 360 for i in range(3)]
-    t = V.TGT
+    t, ep = V.TGT, float(m.bounds[1][2] - m.bounds[0][2])
+    seat_t = float(V.echoes(sh(["openscad", "--export-format=stl", "-o", "/dev/null",
+                                "-D", 'part="cale"', str(SRC)]).stderr)
+                   .get("seat_t (plafond de percage)", "3").split()[0])
+
+    fam, contre, r_out, cable = {}, {}, 0.0, None
+    for nom, z in (("plafond", ep - seat_t / 2), ("platine", ep / 2)):
+        _, holes, ro = V.holes_at(m, z)
+        r_out = max(r_out, ro)
+        cbl, vis, reste = V.triangle(holes)
+        fam[nom], contre[nom], cable = vis, reste, cbl
+
+    def rayon(vis):
+        return float(np.mean([np.hypot(x, y) for x, y, *_ in vis]))
+
+    def cap(vis):
+        return sorted(float(np.degrees(np.arctan2(y, x))) % 360
+                      for x, y, *_ in vis)[0]
+
+    r_pl, r_pt = rayon(fam["plafond"]), rayon(fam["platine"])
+    d = (cap(fam["platine"]) - cap(fam["plafond"])) % 120
+    surplats = float(np.mean([2 * a for *_, a in contre["plafond"]]))
+    d_vis = float(np.mean([2 * a for *_, a in fam["platine"]]))
+    z = V.z_transition(m, fam["plafond"][0][:2], ep / 2, ep)
+    seat = ep - z if z is not None else 0.0
+    z = V.z_transition(m, fam["platine"][0][:2], ep - 1e-3, ep / 2)
+    prof = ep - z if z is not None else 0.0
+    angs = sorted(float(np.degrees(np.arctan2(y, x))) % 360
+                  for x, y, *_ in fam["plafond"])
+
     return [
-        ("Ø disque",              t["disc_d"],     2 * r_out,  "mm"),
-        ("Epaisseur",             t["disc_t"],     float(m.bounds[1][2] - m.bounds[0][2]), "mm"),
-        ("Ø passage cable",       t["cable_d"],    2 * cable[2], "mm"),
-        ("Nombre de percages",    t["n_holes"],    len(vis),   ""),
-        ("Ø percage (vis Ø%g)" % t["hole_d"], t["hole_d"], d_vis, "mm"),
-        ("Bord du trou -> bord",  t["edge_margin"], r_out - r_bolt - t["hole_d"] / 2, "mm"),
-        ("Cercle de percage R",   None,            r_bolt,     "mm"),
-        ("Entraxe du triangle",   None,            r_bolt * 3 ** 0.5, "mm"),
-        ("Ecart angulaire",       120,             float(np.mean(ecarts)), "deg"),
-        ("Volume plein",          None,            m.volume / 1000, "cm3"),
+        ("Ø disque",             t["disc_d"],  2 * r_out, "mm"),
+        ("Epaisseur",            t["disc_t"],  ep, "mm"),
+        ("Ø passage cable",      t["cable_d"], 2 * cable[2], "mm"),
+        ("Percages plafond",     t["n_holes"], len(fam["plafond"]), ""),
+        ("Percages platine",     t["n_holes"], len(fam["platine"]), ""),
+        ("Decalage des 2 triangles", t["offset_ang"], min(d, 120 - d), "deg"),
+        ("Ecart angulaire",      120, float(np.mean(
+            [(angs[(i + 1) % 3] - angs[i]) % 360 for i in range(3)])), "deg"),
+        ("Ø utile percage (vis Ø%g)" % t["hole_d"], t["hole_d"], d_vis, "mm"),
+        ("Bord du trou -> bord", t["edge_margin"],
+         r_out - (r_pl + r_pt) / 2 - t["hole_d"] / 2, "mm"),
+        ("Logement d'ecrou, sur plats", t["ecrou_s"], surplats, "mm"),
+        ("Profondeur du logement", None, prof, "mm"),
+        ("Plafond de percage",   None, seat, "mm"),
+        ("Ancrage rendu a une vis de %g" % t["vis_plafond_l"],
+         None, t["vis_plafond_l"] - seat, "mm"),
+        ("Cercle de percage R",  None, (r_pl + r_pt) / 2, "mm"),
+        ("Entraxe d'un triangle", None, (r_pl + r_pt) / 2 * 3 ** 0.5, "mm"),
+        ("Volume plein",         None, m.volume / 1000, "cm3"),
     ]
 
 
@@ -102,7 +137,8 @@ def b64(data):
 
 def build_html():
     stls, warns = render_all()
-    p = sh(["openscad", "-o", "/dev/null", "-D", 'part="cale"', str(SRC)])
+    p = sh(["openscad", "--export-format=stl", "-o", "/dev/null",
+            "-D", 'part="cale"', str(SRC)])
     raw = "\n".join(l.replace("ECHO: ", "").strip().strip('"')
                     for l in p.stderr.splitlines() if l.startswith("ECHO:"))
     sha, when = git_stamp()
