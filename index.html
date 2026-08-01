@@ -1,21 +1,39 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>cabas-velo</title>
+<title>claude-3d-playground</title>
 <style>
   body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:3rem auto;padding:0 1rem;color:#222}
   @media(prefers-color-scheme:dark){body{background:#111;color:#eee}a{color:#5fd3a0}}
-  h1{font-size:22px} .card{display:block;border:1px solid #8884;border-radius:10px;
+  h1{font-size:22px} h2{font-size:17px;margin:2.2rem 0 .2rem}
+  p.lede{margin:.2rem 0 .6rem;opacity:.85}
+  .card{display:block;border:1px solid #8884;border-radius:10px;
      padding:14px 16px;margin:12px 0;text-decoration:none;color:inherit}
   .card:hover{border-color:#1D9E75} .card b{color:#1D9E75} small{opacity:.7}
 </style></head>
 <body>
-  <h1>cabas-velo — crochet imprimé 3D</h1>
-  <p>Armature type BikeZac : jonc pliable + crochets porte-bagages. Le crochet est en forme de <b>R</b>.</p>
+  <h1>claude-3d-playground</h1>
+  <p class="lede">Pièces imprimées 3D, modélisées en OpenSCAD. Chaque projet est
+    rendu et mesuré avant d'être publié — jamais seulement relu.</p>
+
+  <h2>cabas-velo — crochet imprimé 3D</h2>
+  <p class="lede">Armature type BikeZac : jonc pliable + crochets porte-bagages.
+    Le crochet est en forme de <b>R</b>.</p>
   <a class="card" href="cabas-velo/tools/web/designer.html">
-    <b>→ Éditeur interactif</b> (ajuster mm & angles)<br>
+    <b>→ Éditeur interactif</b> (ajuster mm &amp; angles)<br>
     <small>Règle les distances et les angles, superpose la cible du croquis, teste l'emboîtement du tube, exporte les valeurs.</small></a>
   <a class="card" href="cabas-velo/docs/viewer.html">
     <b>→ Viewer 3D validé</b> (STL rendus par OpenSCAD)<br>
     <small>Tourne/zoome chaque pièce de l'itération courante, avec cible-vs-réel et profil 2D.</small></a>
+
+  <h2>cale-ventilateur — cale d'écartement de plafond</h2>
+  <p class="lede">Disque Ø150 × 30 mm à intercaler entre le plafond et la platine
+    d'un ventilateur à pales, pour gagner <b>30 mm de dégagement</b>. Passage
+    central pour le câble, trois perçages Ø6 en triangle équilatéral.</p>
+  <a class="card" href="cale-ventilateur/docs/viewer.html">
+    <b>→ Viewer 3D validé</b> (STL rendus par OpenSCAD)<br>
+    <small>Les trois pièces, avec la table cible-vs-réel mesurée sur le maillage.</small></a>
+  <a class="card" href="cale-ventilateur/README.md">
+    <b>→ Notice de montage</b> (impression, remplissage, choix des vis)<br>
+    <small>Le gabarit avant la cale, les réglages de trancheur, et comment choisir des vis rallongées.</small></a>
 </body></html>

@@ -1,0 +1,4 @@
+build/
+*.stl
+!stl/*.stl
+__pycache__/

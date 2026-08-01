@@ -1,0 +1,22 @@
+{
+  "_": "VERITE EXTERNE -- la demande, telle qu'elle a ete formulee. Ces cotes ne",
+  "__": "sont recopiees NULLE PART dans le .scad : verify.py mesure le maillage et",
+  "___": "le confronte a ce fichier. C'est la seule garde capable d'attraper un",
+  "____": "cercle de percage faux -- volume, bbox et echos restent identiques quand",
+  "_____": "bolt_r derape, parce qu'ils en derivent tous. Voir CLAUDE.md.",
+
+  "disc_d": 150,
+  "disc_t": 30,
+  "n_holes": 3,
+  "hole_d": 6,
+  "edge_margin": 25,
+  "edge_margin_ref": "du BORD DU TROU au bord du disque (confirme avec l'utilisateur)",
+  "cable_d": 25,
+  "triangle": "equilateral",
+
+  "tol": {
+    "longueur": 0.5,
+    "angle": 0.5,
+    "jeu_percage": [0.0, 1.0]
+  }
+}
