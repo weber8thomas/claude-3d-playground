@@ -1,10 +1,18 @@
 // =====================================================================
-//  CALE D'ECARTEMENT -- plafond <-> platine de ventilateur a pales  [v2]
+//  CALE D'ECARTEMENT -- plafond <-> platine de ventilateur a pales  [v3]
 //
 //  FIXATION EN DEUX TEMPS. La cale se visse d'abord au plafond avec les
 //    vis EXISTANTES ; la platine se visse ensuite sous la cale avec trois
 //    M6 neuves. Deux triangles de percage identiques (R = bolt_r),
 //    decales de 60 degres pour ne pas se rencontrer.
+//
+//  QUI COMMANDE LE CERCLE DE PERCAGE -- change en v3.
+//    Jusqu'ici `bolt_r` DERIVAIT de `edge_margin` : on partait des 25 mm
+//    de marge au bord demandes au depart, et le triangle tombait ou il
+//    tombait. C'etait le mauvais sens. La platine existe, ses trous sont
+//    la ou ils sont : `bolt_r` est une cote RELEVEE, et c'est `edge_margin`
+//    qui en decoule. On ne negocie pas avec le materiel, on negocie avec
+//    la marge -- tant qu'il reste de la matiere (assert plus bas).
 //
 //  AUCUN PLASTIQUE EN TRACTION, NULLE PART.
 //    Cote plafond : lamage profond, la tete de vis porte sur un plafond
@@ -44,7 +52,8 @@
 $fa = 2;      // facettage adaptatif : fin sur les percages Ø6,
 $fs = 0.6;    // raisonnable sur le disque Ø150.
 
-part = "all";   // "cale" | "gabarit" | "essai" | "mod_hubs" | "all"
+// "cale" | "gabarit" | "gabarit_fente" | "essai" | "mod_hubs" | "all"
+part = "all";
 
 // --- DISQUE -----------------------------------------------------------
 disc_d      = 150;    // diametre hors-tout                        [spec]
@@ -54,10 +63,19 @@ disc_t      = 30;     // epaisseur = l'ecartement gagne            [spec]
 hole_d      = 6;      // nominal : vis M6 / vis a bois Ø6          [spec]
 clr         = 0.4;    // jeu de percage. Un trou vertical imprime sort
                       // sous-cote : sans jeu, la vis ne passe pas.
-edge_margin = 25;     // du BORD DU TROU au bord du disque         [spec]
 n_holes     = 3;      // triangle equilateral                      [spec]
 offset_ang  = 60;     // decalage plafond -> platine. 60 deg place chaque
                       // percage de platine a mi-chemin entre deux lamages.
+
+// LE CERCLE DE PERCAGE, cote RELEVEE sur la platine existante.  [releve]
+// C'est la seule cote de ce fichier qui ne se choisit pas : elle se
+// mesure. Elle etait a 47 en v1/v2 -- valeur DEDUITE des 25 mm de marge
+// au bord, jamais relevee -- et les trous sortaient trop centres d'environ
+// 4 mm. D'ou 51. Le "environ" n'est pas leve : `gabarit_fente` le tranche
+// en 15 minutes, et `edge_margin` ci-dessous dit ce que ca coute.
+//   entraxe d'un triangle equilateral = bolt_r * sqrt(3)
+//   -> si tu mesures l'entraxe au pied a coulisse : bolt_r = entraxe / 1,7321
+bolt_r      = 51;
 
 // --- COTE PLAFOND : vis existantes de 30 mm, reutilisees ---------------
 cb_d        = 14;     // Ø du lamage : tete de vis + embout de vissage
@@ -86,17 +104,28 @@ cable_d     = 25;     // traversant, centre
 // --- FINITION ---------------------------------------------------------
 cham        = 0.6;    // chanfrein des aretes : ebavurage, et la face
                       // plafond ne porte pas sur un elephant foot.
-gab_t       = 2;      // epaisseur du gabarit de percage
+gab_t       = 2;      // epaisseur des deux gabarits
 hub_d       = 22;     // Ø des bossages `mod_hubs` (modifier mesh)
+
+// --- GABARIT A FENTES : l'instrument qui MESURE bolt_r ----------------
+gab_slot    = 6;      // demi-course radiale des fentes : bolt_r +/- 6
+gab_arm_w   = 20;     // largeur d'un bras
+gab_hub_r   = 18;     // rayon du moyeu central
+gab_arm_m   = 8;      // matiere au-dela du bout de fente
+wit_d       = 2;      // Ø des deux temoins qui marquent bolt_r nominal
+wit_off     = 6.2;    // leur decalage tangentiel, de part et d'autre
 
 // --- DERIVE -----------------------------------------------------------
 eps    = 0.01;
 disc_r = disc_d / 2;
 hd     = hole_d + clr;                       // Ø reellement perce
-bolt_r = disc_r - edge_margin - hole_d / 2;  // cercle de percage (nominal)
 pitch  = bolt_r * sqrt(3);                   // entraxe d'un triangle
 hex_d  = (nut_s + nut_clr) / cos(30);        // Ø circonscrit du logement
 chord  = 2 * bolt_r * sin(offset_ang / 2);   // lamage <-> logement voisin
+
+// CONSEQUENCE, plus une entree : c'est le cercle de percage qui commande.
+edge_margin = disc_r - bolt_r - hole_d / 2;  // du BORD DU TROU au bord
+edge_min    = 15;                            // plancher admis (voir assert)
 
 // Une seule definition des positions : la geometrie et l'echo ne peuvent
 // pas diverger. Plafond a 90 deg (pointe en haut), platine decalee.
@@ -114,6 +143,9 @@ web_cbl = bolt_r - cb_d / 2 - cable_d / 2;   // lamage -> passage cable
 // Volumes analytiques, chanfreins non deduits (~0,1 %). Ce n'est pas une
 // mesure supposee : c'est le modele qui dit ce qu'il croit produire, et
 // verify.py confronte le maillage a cette affirmation.
+//
+// Aucun de ces volumes ne depend de bolt_r -- c'est precisement pourquoi
+// la garde 5 ne peut PAS attraper un cercle de percage faux. Voir CLAUDE.md.
 function a_hex(d)   = 3 * sqrt(3) / 2 * pow(d / 2, 2);
 // Tronc de cone : hauteur th, rayons r1 et r2.
 function v_cone(th, r1, r2) = PI/3 * th * (r1*r1 + r1*r2 + r2*r2);
@@ -131,6 +163,12 @@ function v_plate(h) =
 // -- Gardes de COHERENCE INTERNE uniquement. Aucune ne verifie le modele
 //    contre une mesure relevee sur le ventilateur : ces cotes-la vivent
 //    dans docs/target.json, ou elles restent discutables.
+//
+//    `edge_margin` a change de camp en v3 : ce n'est plus une cote de la
+//    demande a respecter, c'est une consequence a SURVEILLER. D'ou un
+//    plancher ici, et non plus une valeur dans target.json.
+assert(edge_margin >= edge_min,
+       "cercle de percage trop grand : il ne reste plus assez de bord");
 assert(web_cb  > 5, "matiere trop mince entre le lamage et le bord");
 assert(web_nut > 5, "matiere trop mince entre le logement d'ecrou et le bord");
 assert(web_mid > 5, "lamage et logement d'ecrou trop proches");
@@ -145,9 +183,19 @@ assert(cb_d/2 - cb_relief > hd/2 + 1,
 assert(seat_t + cb_relief < disc_t, "conge et puits depassent l'epaisseur");
 assert(2 * cham < gab_t,  "chanfrein plus epais que le gabarit");
 assert(2 * cham < disc_t, "chanfrein plus epais que la cale");
+// Le gabarit a fentes doit rester un instrument valide : la fente ne doit
+// ni sortir du bras, ni mordre le moyeu, ni toucher les temoins.
+assert(bolt_r - gab_slot > gab_hub_r + hd/2,
+       "la fente du gabarit mord le moyeu");
+assert(wit_off + wit_d/2 < gab_arm_w/2 - 1,
+       "les temoins du gabarit debordent du bras");
+assert(wit_off - wit_d/2 > hd/2 + 1,
+       "les temoins du gabarit touchent la fente");
 
 echo(str("bolt_r (cercle de percage)  = ", bolt_r, " mm  -> Ø", 2*bolt_r));
 echo(str("pitch (entraxe d'un triangle) = ", pitch, " mm"));
+echo(str("edge_margin (bord du trou -> bord) = ", edge_margin,
+         " mm  (plancher ", edge_min, ")"));
 echo(str("chord (lamage <-> ecrou)    = ", chord, " mm"));
 echo(str("hd (Ø reellement perce)     = ", hd, " mm"));
 echo(str("hex_d (Ø circonscrit logement) = ", hex_d, " mm"));
@@ -155,6 +203,9 @@ echo(str("seat_t (plafond de percage) = ", seat_t, " mm"));
 echo(str("portee plate sous la tete = ", (cb_d - 2*cb_relief - hd)/2, " mm de large"));
 echo(str("porte-a-faux du plafond   = ", (cb_d - 2*cb_relief - hd)/2, " mm"));
 echo(str("ancrage rendu a une vis de 30 = ", 30 - seat_t, " mm"));
+echo(str("course de mesure du gabarit a fentes = R", bolt_r - gab_slot,
+         " a R", bolt_r + gab_slot, " (entraxe ", (bolt_r-gab_slot)*sqrt(3),
+         " a ", (bolt_r+gab_slot)*sqrt(3), ")"));
 echo(str("web_cb (lamage -> bord)     = ", web_cb, " mm"));
 echo(str("web_nut (ecrou -> bord)     = ", web_nut, " mm"));
 echo(str("web_mid (lamage -> ecrou)   = ", web_mid, " mm"));
@@ -231,6 +282,17 @@ module plate(h, pierced = false) {
     }
 }
 
+// Fente radiale de r0 a r1, largeur hd. Pas de chanfrein : hull() de deux
+// `bore` remplirait le chanfrein et elargirait la fente de 2*cham -- la
+// coque convexe d'un profil rentrant, c'est le profil enveloppe. Sur un
+// instrument de mesure, une fente Ø7,6 au lieu de Ø6,4 fausserait tout.
+module fente(r0, r1) {
+    hull() {
+        translate([r0, 0, -eps]) cylinder(d = hd, h = gab_t + 2*eps);
+        translate([r1, 0, -eps]) cylinder(d = hd, h = gab_t + 2*eps);
+    }
+}
+
 // =====================================================================
 //  PIECES
 // =====================================================================
@@ -242,6 +304,42 @@ module cale() { plate(disc_t); }
 // puis contre la platine. Les deux doivent tomber juste. C'est
 // exactement l'hypothese sur laquelle repose le decalage de 60 degres.
 module gabarit() { plate(gab_t, pierced = true); }
+
+// L'INSTRUMENT DE MESURE. Trois bras, trois fentes radiales de bolt_r-6 a
+// bolt_r+6, larges de hd.
+//
+// Il se centre TOUT SEUL : trois vis dans trois fentes radiales a 120 deg,
+// c'est trois contraintes tangentielles pour trois degres de liberte
+// (x, y, rotation). Une fois pose sur la platine et les vis engagees, il
+// n'a plus qu'une position -- et les vis s'y trouvent au rayon REEL.
+//
+// Deux temoins Ø2 de part et d'autre de chaque fente marquent le bolt_r
+// nominal : d'un coup d'oeil on voit si la vis tombe en dedans ou en
+// dehors. Pour le chiffre exact, trace au crayon au travers des trois
+// fentes, retire le gabarit et mesure l'entraxe des trois marques au pied
+// a coulisse -- c'est plus fin que n'importe quelle graduation imprimee.
+//   bolt_r = entraxe / sqrt(3)
+//
+// Trois bras au lieu d'un disque plein : ~4 fois moins de matiere et de
+// temps que `gabarit`. C'est ce qui le rend utilisable AVANT de decider.
+module gabarit_fente() {
+    r_out = bolt_r + gab_slot + gab_arm_m;
+    difference() {
+        union() {
+            chamfered_disc(gab_hub_r, gab_t, cham);
+            for (i = [0 : n_holes - 1])
+                rotate([0, 0, ceil_a(i)])
+                    translate([0, -gab_arm_w/2, 0])
+                        cube([r_out, gab_arm_w, gab_t]);
+        }
+        bore(cable_d / 2, gab_t, cham);
+        for (i = [0 : n_holes - 1]) rotate([0, 0, ceil_a(i)]) {
+            fente(bolt_r - gab_slot, bolt_r + gab_slot);
+            translate([bolt_r,  wit_off, 0]) bore(wit_d/2, gab_t, cham);
+            translate([bolt_r, -wit_off, 0]) bore(wit_d/2, gab_t, cham);
+        }
+    }
+}
 
 // Deux coupons, la vraie geometrie a l'echelle 1, ~45 min et ~9 g.
 // A imprimer AVANT la cale. Ils repondent aux quatre questions que le
@@ -270,11 +368,13 @@ module mod_hubs() {
     }
 }
 
-if      (part == "cale")     cale();
-else if (part == "gabarit")  gabarit();
-else if (part == "essai")    essai();
-else if (part == "mod_hubs") mod_hubs();
+if      (part == "cale")          cale();
+else if (part == "gabarit")       gabarit();
+else if (part == "gabarit_fente") gabarit_fente();
+else if (part == "essai")         essai();
+else if (part == "mod_hubs")      mod_hubs();
 else {
     cale();
     translate([disc_d + 10, 0, 0]) gabarit();
+    translate([0, disc_d + 10, 0]) gabarit_fente();
 }

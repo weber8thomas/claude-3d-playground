@@ -163,7 +163,7 @@ def main():
     print("  tranche par PrusaSlicer avec slicer/ender3v3se_petg.ini")
     print("  temps = ordre de grandeur (l'utilisateur imprime sous Cura + Klipper) ;")
     print("  la part de support, elle, porte sur la geometrie.\n")
-    print(f"  {'piece':<10} {'temps':>12} {'poids':>8} {'support':>9}   ponts (z)")
+    print(f"  {'piece':<14} {'temps':>12} {'poids':>8} {'support':>9}   ponts (z)")
     bad = 0
     for part, spec in SPEC["parts"].items():
         if not spec.get("printable", True):
@@ -177,7 +177,7 @@ def main():
             continue
         tps, gr, pct, ponts = res
         z = ", ".join(f"{x:g}" for x in ponts[:4]) + ("…" if len(ponts) > 4 else "")
-        print(f"  {part:<10} {tps:>12} {gr:>6.1f} g {pct:>8.1f} %   {z or 'aucun'}")
+        print(f"  {part:<14} {tps:>12} {gr:>6.1f} g {pct:>8.1f} %   {z or 'aucun'}")
 
     # -- LE TEMOIN. Une garde qui n'a jamais echoue ne garde rien : on rejoue
     #    a chaque fois la piece qui DOIT etre rejetee. Si elle passe, ce n'est
@@ -191,7 +191,7 @@ def main():
     t = analyse(gs) if gs else None
     pct = 100 * t["g_support"] / t["g_total"] if t and t["g_total"] else 0.0
     if pct > seuil:
-        print(f"\n  temoin     porte-a-faux pur          {pct:>8.1f} %   "
+        print(f"\n  {'temoin':<14} porte-a-faux pur      {pct:>8.1f} %   "
               f"rejete, la garde mord")
     else:
         bad += 1

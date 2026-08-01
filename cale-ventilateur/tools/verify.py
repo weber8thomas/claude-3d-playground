@@ -20,9 +20,10 @@ on rend et on mesure le maillage. Sept gardes, chacune pour une classe de bug :
   6. Percages           -> coupe horizontale : nombre de trous traversants,
                            et leurs centres compares aux echos VIS_*_XY.
   7. CIBLE vs REEL      -> le maillage mesure, confronte a docs/target.json :
-                           les deux triangles, leur decalage, les jeux de
-                           percage, la marge au bord, et l'ancrage qui reste
-                           a une vis de 30 mm une fois le lamage creuse.
+                           le cercle de percage, les deux triangles, leur
+                           decalage, les jeux de percage, la marge au bord,
+                           et l'ancrage qui reste a une vis de 30 mm une fois
+                           le lamage creuse.
 
 La garde 7 n'est pas un luxe. Un `bolt_r` faux ne bouge NI le volume (un trou
 deplace occupe le meme volume), NI la boite englobante, NI aucun echo -- ils
@@ -30,6 +31,13 @@ en derivent tous. Teste : le harnais sans la garde 7 declarait vert une cale
 dont le cercle de percage etait a 40 mm au lieu de 47. Il faut une source
 qui ne vienne pas du .scad : c'est docs/target.json, la demande elle-meme.
 C'est le meme dispositif que docs/target_hook.json dans `cabas-velo`.
+
+Et ce n'est pas suffisant non plus. En v1/v2 la garde 7 tournait, verte, sur
+une cale dont les percages sortaient trop centres de 4 mm : la reference
+externe existait, mais elle portait `edge_margin = 25`, un SOUHAIT, au lieu
+de porter le cercle de percage de la platine, qui, lui, s'impose. Une garde
+ne vaut que ce que vaut sa reference. Depuis v3, c'est `bolt_r` qui est
+compare, et la marge au bord n'est plus qu'un plancher.
 """
 import json, pathlib, re, subprocess, sys, tempfile, warnings
 
@@ -215,11 +223,19 @@ def cible_vs_reel(m, ech):
         if max(abs(e - 120) for e in ecarts) > A:
             fails.append(f"CIBLE triangle {nom} non equilateral : "
                          + ", ".join(f"{e:.1f}deg" for e in ecarts))
-        # LA cote de la demande : du BORD DU TROU au bord du disque. Comparee
-        # au Ø NOMINAL de la vis -- le jeu de percage est controle a part.
-        cmp(f"marge bord du trou -> bord ({nom})",
-            r_out - float(np.mean(rayons)) - TGT["hole_d"] / 2,
-            TGT["edge_margin"])
+        # LA cote qui s'impose : le cercle de percage de la platine. C'est
+        # elle qui a manque a ce fichier en v1/v2 -- la garde comparait la
+        # marge au bord, qui n'etait qu'un souhait, et laissait passer un
+        # triangle trop centre de 4 mm. Voir docs/target.json.
+        cmp(f"cercle de percage ({nom})", float(np.mean(rayons)),
+            TGT["bolt_r"])
+        # La marge au bord DECOULE de bolt_r : seul un plancher a du sens.
+        # Comparee au Ø NOMINAL de la vis -- le jeu est controle a part.
+        marge = r_out - float(np.mean(rayons)) - TGT["hole_d"] / 2
+        if marge < TGT["edge_margin_min"] - L:
+            fails.append(f"CIBLE marge bord du trou -> bord ({nom}) : "
+                         f"{marge:.2f} mm, plancher "
+                         f"{TGT['edge_margin_min']:g} mm")
 
     # -- les deux triangles doivent etre decales, sinon lamages et logements
     #    d'ecrous se rencontrent.
@@ -370,7 +386,8 @@ def main():
     #    rend. Chaque point passe donc par TOUTES les gardes -- un balayage
     #    qui ne verifie que l'absence de WARNING annoncerait `ok` pour un
     #    lamage qui ne laisse plus assez d'ancrage a une vis de 30.
-    SUIVI = {"clr": "hd (Ø reellement perce)",
+    SUIVI = {"bolt_r": "edge_margin (bord du trou -> bord)",
+             "clr": "hd (Ø reellement perce)",
              "seat_t": "ancrage rendu a une vis de 30",
              "nut_clr": "hex_d (Ø circonscrit logement)"}
     if not only:

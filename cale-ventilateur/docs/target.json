@@ -6,15 +6,30 @@
   "_____": "identiques quand bolt_r derape, parce qu'ils en derivent tous.",
   "______": "Voir CLAUDE.md.",
 
+  "_v3": "CE FICHIER A EU TORT, et la garde a fidelement applique son tort.",
+  "_v3_": "En v1/v2 il portait edge_margin = 25 comme cote a respecter, et le",
+  "_v3__": "cercle de percage en decoulait. La marge de 25 etait un SOUHAIT ; la",
+  "_v3___": "cote qui s'impose, c'est le triangle de la platine, et il n'etait pas",
+  "_v3____": "dans ce fichier. Resultat : trous trop centres d'environ 4 mm, garde",
+  "_v3_____": "verte. Une verite externe ne vaut que si elle vient d'une mesure sur",
+  "_v3______": "l'objet reel. bolt_r est donc entre ici, et edge_margin en est sorti :",
+  "_v3_______": "il n'est plus qu'un plancher a surveiller (edge_margin_min).",
+
   "disc_d": 150,
   "disc_t": 30,
   "cable_d": 25,
 
   "n_holes": 3,
   "hole_d": 6,
-  "edge_margin": 25,
-  "edge_margin_ref": "du BORD DU TROU au bord du disque",
   "triangle": "equilateral",
+
+  "bolt_r": 51,
+  "bolt_r_ref": "rayon du cercle de percage de la platine existante",
+  "bolt_r_source": "RAPPORTE, PAS MESURE : 47 (v2) + les ~4 mm de decentrage constates a l'oeil. A confirmer par gabarit_fente avant la cale.",
+  "entraxe_ref": "entraxe des 3 trous = bolt_r * sqrt(3) = 88.33 mm pour bolt_r = 51",
+
+  "edge_margin_min": 15,
+  "edge_margin_ref": "du BORD DU TROU au bord du disque. N'est PLUS une cote de la demande : elle DECOULE de bolt_r, qui est impose par la platine. Seul un plancher a du sens.",
 
   "deux_temps": "la cale se visse au plafond, la platine se visse sous la cale",
   "offset_ang": 60,

@@ -69,6 +69,41 @@
         "15%"
       ]
     },
+    "gabarit_fente": {
+      "_": "L'instrument qui mesure bolt_r. Pas de volume_echo : trois bras",
+      "__": "qui se recouvrent au centre, le volume analytique n'aurait aucune",
+      "___": "valeur de garde. Les cotes utiles sont la course des fentes et le",
+      "____": "compte des contours -- 1 cable + 3 fentes + 6 temoins = 10.",
+      "bodies": 1,
+      "printable": true,
+      "dims": {
+        "x": [
+          121.0,
+          124.0
+        ],
+        "y": [
+          105.0,
+          108.0
+        ],
+        "z": [
+          1.9,
+          2.1
+        ]
+      },
+      "section": {
+        "z": 1.0,
+        "shells": 1,
+        "holes": 10
+      },
+      "slice_args": [
+        "--top-solid-layers",
+        "1",
+        "--bottom-solid-layers",
+        "1",
+        "--fill-density",
+        "15%"
+      ]
+    },
     "essai": {
       "bodies": 2,
       "printable": true,
@@ -101,6 +136,13 @@
     }
   },
   "sweep": {
+    "bolt_r": [
+      43,
+      47,
+      51,
+      55,
+      59
+    ],
     "clr": [
       0,
       0.2,

@@ -22,8 +22,8 @@ Prérequis : `openscad`, `prusa-slicer`, `python3`, `trimesh`, `numpy`,
 
 ## Comment ça tient
 
-Deux triangles de perçage de même rayon (R = 47 mm), **décalés de 60°** pour
-ne pas se rencontrer.
+Deux triangles de perçage de même rayon (**R = 51 mm**, entraxe 88,3 mm),
+**décalés de 60°** pour ne pas se rencontrer.
 
 **Côté plafond — 3 lamages Ø14.** Le lamage descend depuis la face platine
 jusqu'à 3 mm du haut. La tête de vis porte sur ce plafond de perçage, juste
@@ -52,10 +52,46 @@ au-dessus des têtes.
 Il te faut aussi un **embout ou tournevis long** : la tête des vis du plafond
 se trouve au fond d'un puits de 27 mm.
 
+## Le cercle de perçage est une cote **relevée**, pas choisie
+
+C'est la correction de la v3, et elle change le sens de lecture du modèle.
+
+Jusqu'ici le rayon du triangle *découlait* des 25 mm de marge au bord
+demandés au départ : `bolt_r = 75 − 25 − 3 = 47`. Les 25 mm étaient un
+souhait ; la platine, elle, ne négocie pas. Résultat, des perçages **trop
+centrés d'environ 4 mm**.
+
+Le sens est inversé : **`bolt_r` est une entrée relevée sur la platine, et la
+marge au bord en découle** (21 mm à R = 51, plancher admis 15 mm). Il reste
+17 mm de matière entre un lamage Ø14 et le bord — largement de quoi
+travailler.
+
+### Régler `bolt_r` sur ta platine
+
+Le plus rapide, si tu peux atteindre la platine au pied à coulisse : mesure
+l'**entraxe** de deux trous, centre à centre, et divise.
+
+    bolt_r = entraxe / 1,7321          (√3, pour un triangle équilatéral)
+
+| entraxe mesuré | `bolt_r` |
+|---|---|
+| 81,4 mm | 47 (l'ancienne valeur, trop centrée) |
+| 84,9 mm | 49 |
+| **88,3 mm** | **51 — la valeur actuelle** |
+| 91,8 mm | 53 |
+| 95,3 mm | 55 |
+
+Puis `bolt_r` dans `src/cale_ventilateur.scad` **et** dans
+`docs/target.json` — les deux séparément, c'est voulu : `make verify` les
+confronte au maillage mesuré et gueule si l'un des deux a été oublié.
+
+Si tu ne peux pas mesurer directement, c'est le rôle de `gabarit_fente`.
+
 ## Ordre d'impression — jamais la cale en premier
 
 | Job | Pièce | Durée | Matière | Ce qu'il valide |
 |---|---|---|---|---|
+| 0 | `gabarit_fente` | **15 min** | **4,0 g** | **le rayon réel du triangle** — il le mesure |
 | 1 | `essai` | **47 min** | **12,3 g** | la tête porte-t-elle au fond du lamage, l'embout atteint-il la vis, l'écrou entre-t-il, la M6 passe-t-elle |
 | 2 | `gabarit` | **50 min** | **15,1 g** | **le triangle, sur le plafond ET sur la platine** |
 | 3 | `cale` | **11 h** | **186 g** | la pièce |
@@ -66,19 +102,39 @@ annoncé ~25 min pour le gabarit : c'était faux du simple au double. Un disque
 Attention quand même : ce sont des temps **PrusaSlicer**, et tu imprimes sous
 Cura + Klipper — prends-les comme un ordre de grandeur.
 
+### `gabarit_fente` — l'instrument, 15 minutes et 4 grammes
+
+Trois bras, chacun portant une **fente radiale** de R−6 à R+6 (donc R = 45 à
+57, entraxe 78 à 99). Deux petits témoins Ø2 encadrent chaque fente au
+`bolt_r` **nominal**.
+
+Il se centre tout seul : trois fentes radiales à 120°, c'est trois
+contraintes tangentielles pour trois degrés de liberté (x, y, rotation). Une
+fois posé sur la platine et les vis engagées, il n'a plus qu'une position —
+et les vis s'y trouvent au **rayon réel**.
+
+1. Pose-le sur la platine, engage les trois vis dans les fentes, laisse-le se
+   placer.
+2. **Coup d'œil** : les vis tombent-elles entre les témoins, en dedans, ou en
+   dehors ? Tu sais déjà si 51 est bon.
+3. **Chiffre exact** : trace au crayon au travers des trois fentes, retire le
+   gabarit, et mesure l'entraxe des trois marques au pied à coulisse. Plus fin
+   que n'importe quelle graduation imprimée.
+
 `essai` est deux coupons à l'échelle 1 : un bloc de 30 mm avec un lamage
 complet, et un plat avec un logement d'écrou. Il répond aux quatre questions
-que le gabarit ne peut pas trancher.
+que ni l'un ni l'autre gabarit ne peut trancher.
 
 `gabarit` est le même disque Ø150 réduit à 2 mm, avec les six perçages nus.
 **Présente-le contre le plafond, puis contre la platine — les deux doivent
 tomber juste.** C'est exactement l'hypothèse sur laquelle repose le décalage
-de 60° : que la platine et le plafond partagent le même triangle. Si ce n'est
-pas le cas, mesure l'entraxe réel et change `edge_margin` (ou `bolt_r`) ;
-`make verify` te dira si la matière restante est encore suffisante.
+de 60° : que la platine et le plafond partagent le même triangle. Il
+*confirme* un rayon, il ne le mesure pas — si ça ne tombe pas juste, retourne
+au `gabarit_fente` et change `bolt_r` ; `make verify` te dira si la matière
+restante est encore suffisante.
 
-Une heure et demie et vingt-sept grammes avant d'en engager onze et cent
-quatre-vingt-six.
+Une heure trois quarts et trente et un grammes avant d'en engager onze et
+cent quatre-vingt-six.
 
 ## Montage
 
@@ -127,8 +183,9 @@ réclamerait au poids de la pièce :
 
 | | support réclamé |
 |---|---|
-| `cale` | **1,7 %** |
+| `cale` | **1,8 %** |
 | `gabarit` | **0 %** |
+| `gabarit_fente` | **0 %** |
 | `essai` | 8,1 % |
 | *témoin en porte-à-faux* | *31,2 %* ← doit échouer, et échoue |
 
@@ -236,3 +293,13 @@ garde 7, et les deux fois où le harnais a déclaré vert quelque chose de faux.
 Les cotes de la demande vivent dans `docs/target.json` (vérité externe). Elles
 ne sont recopiées nulle part dans le `.scad` : `verify.py` mesure le maillage
 et le confronte à ce fichier.
+
+Ça n'a pas suffi : la v2 est sortie verte avec les perçages trop centrés de
+4 mm, parce que `target.json` portait la marge au bord — un souhait — au lieu
+du cercle de perçage — une cote imposée. **Une garde ne vaut que ce que vaut
+sa référence.** C'est la leçon n° 4 de `CLAUDE.md`, et le balayage de
+`make verify` montre maintenant la garde mordre sur la bonne grandeur :
+
+    hors plage  bolt_r=47   CIBLE cercle de percage (plafond) : 47.00 vs 51 demande
+    ok          bolt_r=51   edge_margin = 21 mm  (plancher 15)
+    hors plage  bolt_r=55   CIBLE cercle de percage (plafond) : 55.00 vs 51 demande

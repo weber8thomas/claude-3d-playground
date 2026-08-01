@@ -24,7 +24,7 @@ ROOT   = pathlib.Path(__file__).resolve().parent.parent
 SRC    = ROOT / "src" / "cale_ventilateur.scad"
 BUILD  = ROOT / "build"
 VENDOR = ROOT.parent / "cabas-velo" / "tools" / "web" / "vendor"
-PARTS  = ["cale", "gabarit", "essai", "mod_hubs"]
+PARTS  = ["cale", "gabarit", "gabarit_fente", "essai", "mod_hubs"]
 
 
 def sh(cmd):
@@ -95,14 +95,16 @@ def measured():
         ("Ecart angulaire",      120, float(np.mean(
             [(angs[(i + 1) % 3] - angs[i]) % 360 for i in range(3)])), "deg"),
         ("Ø utile percage (vis Ø%g)" % t["hole_d"], t["hole_d"], d_vis, "mm"),
-        ("Bord du trou -> bord", t["edge_margin"],
+        # La cote qui s'impose (relevee sur la platine) vs celle qui en
+        # decoule (simple plancher). L'inverse de v1/v2 -- voir target.json.
+        ("Cercle de percage R",  t["bolt_r"], (r_pl + r_pt) / 2, "mm"),
+        ("Bord du trou -> bord (plancher %g)" % t["edge_margin_min"], None,
          r_out - (r_pl + r_pt) / 2 - t["hole_d"] / 2, "mm"),
         ("Logement d'ecrou, sur plats", t["ecrou_s"], surplats, "mm"),
         ("Profondeur du logement", None, prof, "mm"),
         ("Plafond de percage",   None, seat, "mm"),
         ("Ancrage rendu a une vis de %g" % t["vis_plafond_l"],
          None, t["vis_plafond_l"] - seat, "mm"),
-        ("Cercle de percage R",  None, (r_pl + r_pt) / 2, "mm"),
         ("Entraxe d'un triangle", None, (r_pl + r_pt) / 2 * 3 ** 0.5, "mm"),
         ("Volume plein",         None, m.volume / 1000, "cm3"),
     ]

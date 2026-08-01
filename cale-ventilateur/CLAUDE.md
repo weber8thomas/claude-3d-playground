@@ -16,12 +16,12 @@ sur l'impression, tranche-la.
 
 Ne conclus pas sans avoir vu passer la sortie.
 
-## Les trois leçons de ce projet
+## Les quatre leçons de ce projet
 
 Elles se ressemblent, et ce n'est pas un hasard : **à chaque fois, quelque
 chose affirmait le faux sans que rien ne le signale.** Un vert n'est une
 preuve que si la garde regarde ailleurs que le modèle, si elle mesure la
-bonne chose, et si elle peut échouer.
+bonne chose, si sa référence vient du monde réel, et si elle peut échouer.
 
 ### 1. Un modèle ne peut pas se vérifier lui-même
 
@@ -78,12 +78,15 @@ plus finement que ce que la mesure porte :
 
 Casse volontairement le modèle et vérifie qu'elle mord. Une garde qui n'a
 jamais échoué ne garde rien — et une garde qui échoue à tort est pire, elle
-apprend à ignorer les rouges. Les onze cas éprouvés : `bolt_r` décalé,
-triangles superposés, décalage à 30°, lamage trop profond, lamage trop court,
-écrou non noyé, logement trop serré, logement trop lâche, jeu de perçage
-négatif, Ø disque faux, variable perdue. **11/11 détectés.** C'est le cas
-« logement trop serré » qui passait silencieusement et qui a fait découvrir la
-leçon n° 2.
+apprend à ignorer les rouges. Les quinze cas éprouvés : `bolt_r` décalé de
++4 et de −2, triangles superposés, décalage à 30°, lamage trop profond,
+lamage trop court, écrou non noyé, logement trop serré, logement trop lâche,
+jeu de perçage négatif, Ø disque faux, variable perdue, fente du gabarit
+mordant le moyeu, témoins hors du bras, témoins dans la fente.
+**15/15 détectés.** C'est le cas « logement trop serré » qui passait
+silencieusement et qui a fait découvrir la leçon n° 2 — et les deux cas
+`bolt_r` ne sont détectés que depuis la leçon n° 4 : avant, la référence
+comparée était la marge au bord, pas le cercle de perçage.
 
 ### 3. Un temps d'impression et un « aucun support » se tranchent
 
@@ -118,6 +121,42 @@ plateau 0) sans rien dire. La première mesure annonçait « 3h36 pour le
 gabarit » et ne mesurait rien du tout. `slice_check.py` relit donc l'en-tête
 du G-code avant de croire le moindre chiffre.
 
+### 4. Une garde ne vaut que ce que vaut sa référence
+
+C'est la leçon n° 1 poussée d'un cran, et elle a coûté une itération entière.
+
+`docs/target.json` existait, la garde 7 tournait, les onze tests négatifs
+passaient — et la cale sortait avec les perçages **trop centrés d'environ
+4 mm**. Personne n'a rien vu, y compris la garde faite pour ça.
+
+Parce que `target.json` portait `edge_margin = 25`, et que le `.scad` en
+**déduisait** `bolt_r = disc_r − edge_margin − hole_d/2`. Les 25 mm venaient
+de la demande initiale — un souhait, parfaitement respectable, mais qui ne
+s'impose à rien. **La cote qui s'impose, c'est le triangle de la platine
+existante**, et elle n'était écrite nulle part : ni dans le `.scad`, ni dans
+`target.json`. La garde a fidèlement fait respecter une référence fausse.
+
+Deux corrections, et c'est le renversement qui compte plus que les chiffres :
+
+- **Le sens de la dérivation.** `bolt_r` est une cote *relevée* et devient
+  une entrée du `.scad` ; `edge_margin` en *découle* et n'est plus qu'un
+  plancher (`edge_min = 15`). On ne négocie pas avec le matériel, on négocie
+  avec la marge.
+- **Ce que `target.json` contient.** `bolt_r` y entre, `edge_margin` en sort.
+  Une vérité externe n'est une vérité que si elle vient d'une **mesure sur
+  l'objet réel** ; sinon c'est juste une préférence transcrite, et elle a
+  exactement autant d'autorité que le `.scad` — c'est-à-dire aucune.
+
+Le balayage `bolt_r` de `make verify` montre la garde mordre désormais sur la
+bonne grandeur, y compris sur l'ancienne valeur :
+
+    hors plage  bolt_r=47   CIBLE cercle de percage (plafond) : 47.00 vs 51 demande
+
+Corollaire pratique : quand une cote vient du monde et pas du modèle,
+**donne-toi le moyen de la mesurer.** D'où `gabarit_fente` — trois fentes
+radiales qui se centrent seules sur la platine et rendent le rayon réel en
+15 minutes d'impression, au lieu de le déduire.
+
 ## Les huit gardes
 
 1. **Tout `WARNING` OpenSCAD est fatal.** Une variable perdue produit un
@@ -131,10 +170,12 @@ du G-code avant de croire le moindre chiffre.
    pas plus : voir la leçon n° 1.
 6. **Perçages traversants** — coupe horizontale, nombre et positions.
 7. **Cible vs réel** — le maillage mesuré, confronté à `docs/target.json` :
-   les deux triangles, leur décalage, les jeux de perçage et d'écrou, la marge
-   au bord, et deux profondeurs qu'aucune coupe unique ne montre — le plafond
-   de perçage et le logement d'écrou, trouvés par dichotomie
-   (`z_transition`). La seule garde dont la référence ne vient pas du `.scad`.
+   **le cercle de perçage**, les deux triangles, leur décalage, les jeux de
+   perçage et d'écrou, la marge au bord (plancher seul), et deux profondeurs
+   qu'aucune coupe unique ne montre — le plafond de perçage et le logement
+   d'écrou, trouvés par dichotomie (`z_transition`). La seule garde dont la
+   référence ne vient pas du `.scad` — et voir la leçon n° 4 pour ce que ça
+   ne suffit pas à garantir.
 8. **Tranché pour de vrai** (`make slice`, `tools/slice_check.py`) — le profil
    arrive-t-il jusqu'au trancheur, la part de support réclamée reste-t-elle
    sous 10 %, et quels sont les temps et poids **mesurés**. Lent : hors de
@@ -147,6 +188,16 @@ du G-code avant de croire le moindre chiffre.
   disparaître la seule garde indépendante du projet. Les cotes du `.scad` sont
   des paramètres de conception ; celles de `target.json` sont la demande. Les
   deux doivent rester séparées pour pouvoir être confrontées.
+- **Faire dériver une cote imposée d'une cote souhaitée.** `bolt_r` est relevé
+  sur la platine, `edge_margin` en découle — jamais l'inverse. C'est la
+  leçon n° 4, et elle a coûté une itération. Devant une cote de conception,
+  la question est : *est-ce que je la choisis, ou est-ce que le matériel me
+  l'impose ?* Ce qui est imposé est une entrée ; ce qui découle est un echo
+  et, au mieux, un plancher.
+- **Mettre dans `target.json` une cote qui n'a pas été mesurée sur l'objet.**
+  Une préférence transcrite n'est pas une vérité externe, et la garde 7
+  l'appliquera avec la même rigueur qu'une vraie mesure. Quand une cote est
+  rapportée sans être relevée, le dire **dans le fichier** (`bolt_r_source`).
 - **Dupliquer une position.** `ceil_xy(i)` et `brkt_xy(i)` servent à la fois à
   la géométrie et aux echos. Une seule définition, pas deux qui peuvent
   diverger.
@@ -161,14 +212,21 @@ du G-code avant de croire le moindre chiffre.
 
 ## Architecture
 
-Quatre pièces, un seul `part=` :
+Cinq pièces, un seul `part=` :
 
 - **`cale`** — la pièce. Cylindre plein Ø150 × 30, passage central Ø25, deux
-  triangles à R = 47 décalés de 60° : trois lamages Ø14 (plafond) et trois
-  logements d'écrou M6 ouverts vers le haut (platine).
+  triangles à **R = `bolt_r` = 51** décalés de 60° : trois lamages Ø14
+  (plafond) et trois logements d'écrou M6 ouverts vers le haut (platine).
+- **`gabarit_fente`** — l'**instrument de mesure**, 15 min et 4 g. Trois bras
+  portant chacun une fente radiale de R−6 à R+6. Trois fentes radiales à 120°
+  = trois contraintes tangentielles pour trois degrés de liberté : posé sur
+  la platine, vis engagées, **il se centre tout seul** et les vis s'y trouvent
+  au rayon réel. Deux témoins Ø2 encadrent chaque fente au `bolt_r` nominal.
+  Il existe parce que `bolt_r` est une cote relevée — voir la leçon n° 4.
 - **`gabarit`** — le même disque en 2 mm, six perçages nus. Il n'existe que
   pour être présenté sur le plafond **et** sur la platine : c'est la seule
-  chose qui valide l'hypothèse « les deux triangles sont le même ».
+  chose qui valide l'hypothèse « les deux triangles sont le même ». Il
+  confirme un rayon ; il ne le mesure pas — c'est le rôle de `gabarit_fente`.
 - **`essai`** — deux coupons à l'échelle 1 (~45 min). Portée de tête, accès de
   l'embout, entrée de l'écrou, passage de la M6. À imprimer en premier.
 - **`mod_hubs`** — six colonnes Ø22 aux coordonnées des vis, pour le
@@ -202,8 +260,11 @@ shaper. Aucun profil Cura ne peut les rattraper.
   `clr = 0,4` sont des hypothèses ; `essai` tranche en 45 minutes.
 - **Le type de tête** non plus. Une tête fraisée dans un trou cylindrique
   travaille comme un coin : rondelle obligatoire, ou fraisure à modéliser.
-- **L'entraxe de la platine** vient de la demande, pas d'une mesure. Le
-  gabarit tranche — et c'est lui qui valide le décalage de 60°.
+- **L'entraxe de la platine reste le point ouvert n° 1.** `bolt_r = 51`
+  vient d'un décentrage *constaté à l'œil* (« environ 4 mm » par rapport au
+  47 de la v2), pas d'un relevé au pied à coulisse. `gabarit_fente` tranche
+  en 15 minutes et 4 g, `gabarit` confirme ensuite — et c'est lui qui valide
+  le décalage de 60°.
 - **La tenue de la fixation au plafond** (cheville, solive, boîtier) est le
   vrai point faible du montage et sort du périmètre de la pièce. Voir
   `README.md`.

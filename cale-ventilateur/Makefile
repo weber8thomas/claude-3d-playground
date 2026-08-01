@@ -1,4 +1,4 @@
-PARTS := cale gabarit essai mod_hubs
+PARTS := cale gabarit gabarit_fente essai mod_hubs
 SRC   := src/cale_ventilateur.scad
 
 .PHONY: all verify slice stl export web serve params clean help
