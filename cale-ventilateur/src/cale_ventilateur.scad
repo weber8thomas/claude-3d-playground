@@ -24,8 +24,11 @@
 //       sur ces six colonnes. Voir README.md.
 //
 //  IMPRESSION : posee a plat, face platine au plateau. zmin = 0, tous les
-//    percages verticaux. Un seul pont : le plafond du lamage (annulaire,
-//    3,8 mm de large). C'est un contre-percage ordinaire, aucun support.
+//    percages verticaux, aucun support. Le seul porte-a-faux est le plafond
+//    du lamage : un conge a 45 deg (cb_relief) le ramene a 1,8 mm
+//    d'annulaire, que le trancheur ponte. TRANCHE, pas suppose --
+//    `make slice` mesure 1,7 % de support reclame sur la cale, contre 31 %
+//    pour un temoin en porte-a-faux.
 //    Les logements d'ecrous sont ouverts vers le HAUT : imprimes en fin
 //    de course, jamais en pont.
 //
@@ -61,6 +64,14 @@ cb_d        = 14;     // Ø du lamage : tete de vis + embout de vissage
 seat_t      = 3;      // plafond de percage. C'est CA qui rend les vis de
                       // 30 mm suffisantes : elles ne traversent que 3 mm
                       // de cale et gardent ~27 mm d'ancrage.
+cb_relief   = 2;      // CONGE A 45 DEG SOUS LE PLAFOND DU LAMAGE.
+                      // Sans lui, le plafond est un annulaire de 3,8 mm en
+                      // porte-a-faux au fond d'un puits borgne de 27 mm :
+                      // PrusaSlicer y pose 3,35 g de support qu'on ne peut
+                      // pas aller chercher. Le conge ramene le porte-a-faux
+                      // a 1,8 mm et laisse une portee plate de 1,8 mm de
+                      // large -- assez pour une tete M6. Verifie par
+                      // `make slice` (garde 8), pas suppose.
 
 // --- COTE PLATINE : 3 vis M6 neuves + 3 ecrous noyes ------------------
 nut_s       = 10;     // six-pans sur plats, ecrou M6 DIN 934
@@ -104,10 +115,16 @@ web_cbl = bolt_r - cb_d / 2 - cable_d / 2;   // lamage -> passage cable
 // mesure supposee : c'est le modele qui dit ce qu'il croit produire, et
 // verify.py confronte le maillage a cette affirmation.
 function a_hex(d)   = 3 * sqrt(3) / 2 * pow(d / 2, 2);
+// Tronc de cone : hauteur th, rayons r1 et r2.
+function v_cone(th, r1, r2) = PI/3 * th * (r1*r1 + r1*r2 + r2*r2);
+// Le lamage : puits droit + conge a 45 deg + percage a travers la portee.
+function v_ceil(h) = h <= seat_t ? PI/4 * hd*hd * h :
+      PI/4 * cb_d*cb_d * (h - seat_t - cb_relief)
+    + v_cone(cb_relief, cb_d/2, max(hd/2, cb_d/2 - cb_relief))
+    + PI/4 * hd*hd * seat_t;
 function v_plate(h) =
       PI/4 * h * (disc_d*disc_d - cable_d*cable_d)
-    - n_holes * (PI/4 * hd*hd * min(h, seat_t)
-                 + PI/4 * cb_d*cb_d * max(0, h - seat_t))
+    - n_holes * v_ceil(h)
     - n_holes * (PI/4 * hd*hd * max(0, h - nut_depth)
                  + a_hex(hex_d) * min(h, nut_depth));
 
@@ -123,6 +140,9 @@ assert(nut_depth > nut_h,
        "logement moins profond que l'ecrou : la cale ne porterait plus a plat");
 assert(nut_depth + seat_t < disc_t, "logement et lamage se rejoignent");
 assert(cb_d > hd + 4, "lamage trop etroit pour une tete de vis");
+assert(cb_d/2 - cb_relief > hd/2 + 1,
+       "conge trop grand : il ne reste plus de portee plate sous la tete");
+assert(seat_t + cb_relief < disc_t, "conge et puits depassent l'epaisseur");
 assert(2 * cham < gab_t,  "chanfrein plus epais que le gabarit");
 assert(2 * cham < disc_t, "chanfrein plus epais que la cale");
 
@@ -132,6 +152,8 @@ echo(str("chord (lamage <-> ecrou)    = ", chord, " mm"));
 echo(str("hd (Ø reellement perce)     = ", hd, " mm"));
 echo(str("hex_d (Ø circonscrit logement) = ", hex_d, " mm"));
 echo(str("seat_t (plafond de percage) = ", seat_t, " mm"));
+echo(str("portee plate sous la tete = ", (cb_d - 2*cb_relief - hd)/2, " mm de large"));
+echo(str("porte-a-faux du plafond   = ", (cb_d - 2*cb_relief - hd)/2, " mm"));
 echo(str("ancrage rendu a une vis de 30 = ", 30 - seat_t, " mm"));
 echo(str("web_cb (lamage -> bord)     = ", web_cb, " mm"));
 echo(str("web_nut (ecrou -> bord)     = ", web_nut, " mm"));
@@ -165,11 +187,22 @@ module bore(r, h, c) {
 
 // COTE PLAFOND : lamage Ø cb_d depuis la face platine (z = 0) jusqu'a
 // seat_t du haut, puis Ø hd traversant. La tete porte sur ce plafond.
+//
+// Un seul solide de revolution : le puits, le conge a 45 deg, la portee
+// plate et le percage. Pas d'union de primitives, donc pas d'arete parasite
+// au raccord -- et le profil se lit d'un coup.
 module ceiling_cut(h) {
-    bore(hd / 2, h, cham);
-    if (h > seat_t)
-        translate([0, 0, -eps])
-            cylinder(d = cb_d, h = h - seat_t + eps);
+    if (h <= seat_t) bore(hd / 2, h, cham);
+    else {
+        rc = max(hd / 2, cb_d / 2 - cb_relief);   // rayon de la portee plate
+        rotate_extrude(convexity = 6)
+            polygon([[0, -eps], [cb_d/2, -eps],
+                     [cb_d/2, h - seat_t - cb_relief],   // puits droit
+                     [rc,     h - seat_t],               // conge a 45 deg
+                     [hd/2,   h - seat_t],               // portee plate
+                     [hd/2,   h - cham],
+                     [hd/2 + cham, h], [hd/2 + cham, h + eps], [0, h + eps]]);
+    }
 }
 
 // COTE PLATINE : Ø hd traversant, plus le logement d'ecrou ouvert vers le

@@ -9,14 +9,15 @@ visse ensuite sous la cale.
 
 ## Démarrer
 
-    make verify     # les 7 gardes, sur chaque pièce
+    make verify     # les 7 gardes géométriques, sur chaque pièce
+    make slice      # garde 8 : tranche pour de vrai — temps, poids, supports
     make params     # toutes les cotes dérivées
     make web        # viewer 3D autonome (build/index.html) : la pièce à l'œil
     make serve      # sert build/ en local (http://localhost:8000/index.html)
     make export     # STL versionnés dans stl/
 
-Prérequis : `openscad`, `python3`, `trimesh`, `numpy`, `scipy`, `networkx`,
-`shapely`, `rtree`. Le viewer emprunte three.js au projet voisin `cabas-velo`
+Prérequis : `openscad`, `prusa-slicer`, `python3`, `trimesh`, `numpy`,
+`scipy`, `networkx`, `shapely`, `rtree`. Le viewer emprunte three.js au projet voisin `cabas-velo`
 (lu au build) : la page produite est autonome, elle marche hors-ligne.
 
 ## Comment ça tient
@@ -55,9 +56,15 @@ se trouve au fond d'un puits de 27 mm.
 
 | Job | Pièce | Durée | Matière | Ce qu'il valide |
 |---|---|---|---|---|
-| 1 | `essai` | ~45 min | ~7 g | la tête porte-t-elle au fond du lamage, l'embout atteint-il la vis, l'écrou entre-t-il, la M6 passe-t-elle |
-| 2 | `gabarit` | ~25 min | ~13 g | **le triangle, sur le plafond ET sur la platine** |
-| 3 | `cale` | ~10 h | ~190 g | la pièce |
+| 1 | `essai` | **47 min** | **12,3 g** | la tête porte-t-elle au fond du lamage, l'embout atteint-il la vis, l'écrou entre-t-il, la M6 passe-t-elle |
+| 2 | `gabarit` | **50 min** | **15,1 g** | **le triangle, sur le plafond ET sur la platine** |
+| 3 | `cale` | **11 h** | **186 g** | la pièce |
+
+Ces chiffres sortent de `make slice`, ils ne sont plus estimés. J'avais
+annoncé ~25 min pour le gabarit : c'était faux du simple au double. Un disque
+Ø150 plein, c'est ~40 m d'extrusion rien que pour la première couche.
+Attention quand même : ce sont des temps **PrusaSlicer**, et tu imprimes sous
+Cura + Klipper — prends-les comme un ordre de grandeur.
 
 `essai` est deux coupons à l'échelle 1 : un bloc de 30 mm avec un lamage
 complet, et un plat avec un logement d'écrou. Il répond aux quatre questions
@@ -70,7 +77,8 @@ de 60° : que la platine et le plafond partagent le même triangle. Si ce n'est
 pas le cas, mesure l'entraxe réel et change `edge_margin` (ou `bolt_r`) ;
 `make verify` te dira si la matière restante est encore suffisante.
 
-Une heure et vingt grammes avant d'engager dix heures et deux cents.
+Une heure et demie et vingt-sept grammes avant d'en engager onze et cent
+quatre-vingt-six.
 
 ## Montage
 
@@ -96,29 +104,51 @@ compression. Le cœur du disque ne fait rien.
 | Réglage | Valeur | Pourquoi |
 |---|---|---|
 | Remplissage | **20 % gyroïde** | isotrope, suffisant hors des appuis |
-| Périmètres | **4** | c'est là que passe l'effort |
+| Périmètres | **3** | c'est là que passe l'effort |
 | Couches pleines dessus/dessous | **5** | les deux faces d'appui |
 | Matière | **PETG** | voir plus bas |
-| Supports | **aucun** | `zmin = 0`, tous les perçages verticaux |
+| Supports | **aucun** | mesuré, pas supposé — voir ci-dessous |
 
-→ ~145 cm³, **~190 g, ~10 h** (à confirmer dans ton trancheur).
+→ **186 g, 11 h** (mesuré par `make slice`).
 
-Un seul pont dans toute la pièce : le plafond du lamage, un anneau de 3,8 mm
-de large. C'est un contre-perçage ordinaire, aucun slicer n'en fait un drame.
-Les logements d'écrous sont ouverts vers le **haut** : imprimés en fin de
-course, jamais en pont.
+### Pourquoi aucun support, et comment on le sait
+
+Le seul porte-à-faux de la pièce est le plafond du lamage. Il est au fond
+d'un puits borgne Ø14 profond de 27 mm — donc si un support s'y logeait, tu
+ne pourrais jamais aller le curer.
+
+Un **congé à 45°** (`cb_relief`) ramène le porte-à-faux de 3,8 à **1,8 mm**
+d'annulaire, et laisse une portée plate de 1,8 mm de large sous la tête de
+vis. Le trancheur le franchit en pont.
+
+Ce n'est pas une affirmation, c'est une mesure. `make slice` tranche chaque
+pièce **avec les supports en auto** et compare ce que la géométrie
+réclamerait au poids de la pièce :
+
+| | support réclamé |
+|---|---|
+| `cale` | **1,7 %** |
+| `gabarit` | **0 %** |
+| `essai` | 8,1 % |
+| *témoin en porte-à-faux* | *31,2 %* ← doit échouer, et échoue |
+
+`essai` frôle le seuil de 10 % : c'est le même lamage dans un coupon bien
+plus petit, il pèse donc proportionnellement plus. Normal, mais à surveiller
+si tu réduis encore les coupons.
+
+Les logements d'écrous, eux, sont ouverts vers le **haut** : imprimés en fin
+de course, jamais en pont.
 
 ### `mod_hubs` : 100 % là où ça compte
 
 `stl/mod_hubs.stl` contient six colonnes Ø22 aux coordonnées exactes des vis.
 
-1. Charge `stl/cale.stl` dans PrusaSlicer.
-2. Clic droit sur l'objet → **Ajouter un modificateur** → **Charger…** →
-   `stl/mod_hubs.stl`.
-3. Vérifie à l'œil qu'il tombe sur les six perçages. S'il est décalé, saisis
-   les positions à la main — `make params` donne `VIS_PLAFOND_XY` et
-   `VIS_PLATINE_XY`.
-4. Sur le modificateur : `fill_density = 100 %`.
+Dans **Cura** : charge `stl/cale.stl`, puis **File → Open File(s)** →
+`stl/mod_hubs.stl`. Sélectionne les colonnes, clique **Per Model Settings**
+(icône à gauche) → **Modify settings for infill of other models**, et mets
+`Infill Density = 100 %`. Vérifie à l'œil qu'elles tombent sur les six
+perçages ; si elles sont décalées, saisis les positions à la main —
+`make params` donne `VIS_PLAFOND_XY` et `VIS_PLATINE_XY`.
 
 C'est un confort, pas une obligation : un remplissage global à 40 % fait le
 même travail pour ~60 g de plus.
@@ -149,7 +179,7 @@ dans une solive. Ça se confirme en trois secondes :
 **La seule mesure qui reste à faire : le diamètre du filet, crête à crête, au
 pied à coulisse.** C'est lui qui décide si le perçage convient. Le trou fait
 Ø6,38 utile. S'il mesure 5 ou 5,5, tout va bien. S'il dépasse 6,38, change
-`hole_d` dans le `.scad` et réimprime `essai` — 45 minutes.
+`hole_d` dans le `.scad` et réimprime `essai` — 47 minutes.
 
 Si ta tête de vis est **fraisée conique**, mets une rondelle M6 (Ø12, elle
 entre dans le lamage Ø14) : un cône serré directement dans un trou
@@ -170,9 +200,36 @@ ventilateur travaille en fatigue. Regarde dans quoi les vis mordent :
 Ce point sort du périmètre de la pièce, mais c'est lui qui décide si le
 montage tient.
 
+## Profil Ender 3 V3 SE / PETG — Cura + Klipper
+
+Les réglages complets sont dans **`slicer/`** :
+
+- **`cura_ender3v3se_petg.md`** — noms de champs Cura exacts. Trois pièges y
+  sont détaillés, dont deux qui feraient mentir le gabarit :
+  `Hole Horizontal Expansion` doit rester à **0**, et `Maximum Resolution`
+  doit descendre à **0,2 mm** (au défaut de 0,5, Cura polygonise les Ø6).
+- **`klipper_petg.cfg`** — ce qu'aucun profil Cura ne peut rattraper : la
+  `pressure_advance` (~0,04 en direct drive, à calibrer), et les deux cas
+  d'accélération selon que ton input shaper est calibré ou non.
+- **`ender3v3se_petg.ini`** — PrusaSlicer, uniquement pour `make slice`. Ce
+  n'est pas un profil d'impression.
+
+Deux points qui comptent plus que la table de réglages :
+
+**Le plafond n'est pas la vitesse, c'est le débit.** La hotend d'origine
+plafonne vers **10 mm³/s** en PETG, et Cura n'a pas de champ « débit
+volumétrique max ». Fais la conversion toi-même :
+`vitesse_max = 10 / (hauteur × largeur)` → 120 mm/s à 0,2 × 0,42. Monter à
+150 ne fait que sous-extruder.
+
+**Le PETG et la tôle PC/PEI s'aiment trop.** Assez pour en arracher des
+morceaux. Bâton de colle en **agent de démoulage**, plateau à **70 °C** et
+pas 80, et refroidissement complet avant de décoller.
+
 ## Vérification
 
-`make verify` rend chaque pièce et applique sept gardes. Voir `CLAUDE.md`
+`make verify` rend chaque pièce et applique sept gardes géométriques ;
+`make slice` ajoute la huitième, qui tranche pour de vrai. Voir `CLAUDE.md`
 pour ce que chacune attrape et pourquoi elle existe — en particulier la
 garde 7, et les deux fois où le harnais a déclaré vert quelque chose de faux.
 

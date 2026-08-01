@@ -2,3 +2,4 @@ build/
 *.stl
 !stl/*.stl
 __pycache__/
+*.gcode

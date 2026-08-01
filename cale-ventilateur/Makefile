@@ -1,10 +1,13 @@
 PARTS := cale gabarit essai mod_hubs
 SRC   := src/cale_ventilateur.scad
 
-.PHONY: all verify stl export web serve params clean help
+.PHONY: all verify slice stl export web serve params clean help
 
 verify:            ## Les 7 gardes : WARNING, maillage, zmin, cotes, volume, percages, cible
 	@python3 tools/verify.py
+
+slice:             ## Garde 8 : trancher pour de vrai (aucun support, tout pont fait)
+	@python3 tools/slice_check.py
 
 web:               ## Viewer 3D autonome (build/index.html) : la piece a l'oeil
 	@python3 tools/gallery.py

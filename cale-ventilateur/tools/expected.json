@@ -1,50 +1,125 @@
 {
-  "bed": [220, 220, 250],
+  "bed": [
+    220,
+    220,
+    250
+  ],
   "parts": {
     "cale": {
       "bodies": 1,
       "printable": true,
       "dims": {
-        "x": [149.5, 150.5],
-        "y": [149.5, 150.5],
-        "z": [29.9, 30.1]
+        "x": [
+          149.5,
+          150.5
+        ],
+        "y": [
+          149.5,
+          150.5
+        ],
+        "z": [
+          29.9,
+          30.1
+        ]
       },
       "volume_echo": "V_CALE_MM3",
       "volume_tol": 0.01,
-      "section": { "z": 15, "shells": 1, "holes": 7 },
-      "target": true
+      "section": {
+        "z": 15,
+        "shells": 1,
+        "holes": 7
+      },
+      "target": true,
+      "slice_args": []
     },
     "gabarit": {
       "bodies": 1,
       "printable": true,
       "dims": {
-        "x": [149.5, 150.5],
-        "y": [149.5, 150.5],
-        "z": [1.9, 2.1]
+        "x": [
+          149.5,
+          150.5
+        ],
+        "y": [
+          149.5,
+          150.5
+        ],
+        "z": [
+          1.9,
+          2.1
+        ]
       },
       "volume_echo": "V_GABARIT_MM3",
       "volume_tol": 0.01,
       "section": {
-        "z": 1.0, "shells": 1, "holes": 7,
-        "match_echo": ["VIS_PLAFOND_XY", "VIS_PLATINE_XY"]
-      }
+        "z": 1.0,
+        "shells": 1,
+        "holes": 7,
+        "match_echo": [
+          "VIS_PLAFOND_XY",
+          "VIS_PLATINE_XY"
+        ]
+      },
+      "slice_args": [
+        "--top-solid-layers",
+        "1",
+        "--bottom-solid-layers",
+        "1",
+        "--fill-density",
+        "15%"
+      ]
     },
     "essai": {
       "bodies": 2,
       "printable": true,
-      "dims": { "z": [29.9, 30.1] }
+      "dims": {
+        "z": [
+          29.9,
+          30.1
+        ]
+      },
+      "slice_args": [
+        "--top-solid-layers",
+        "3",
+        "--bottom-solid-layers",
+        "3",
+        "--fill-density",
+        "20%"
+      ]
     },
     "mod_hubs": {
       "bodies": 6,
       "printable": false,
-      "dims": { "z": [29.9, 30.1] },
+      "dims": {
+        "z": [
+          29.9,
+          30.1
+        ]
+      },
       "volume_echo": "V_HUBS_MM3",
       "volume_tol": 0.005
     }
   },
   "sweep": {
-    "clr": [0, 0.2, 0.4, 0.6, 1.0],
-    "seat_t": [2, 3, 4, 6],
-    "nut_clr": [0.1, 0.3, 0.5, 0.8]
-  }
+    "clr": [
+      0,
+      0.2,
+      0.4,
+      0.6,
+      1.0
+    ],
+    "seat_t": [
+      2,
+      3,
+      4,
+      6
+    ],
+    "nut_clr": [
+      0.1,
+      0.3,
+      0.5,
+      0.8
+    ]
+  },
+  "support_max_pct": 10
 }
