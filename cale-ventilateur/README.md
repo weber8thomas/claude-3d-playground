@@ -89,18 +89,22 @@ Si tu ne peux pas mesurer directement, c'est le rôle de `gabarit_fente`.
 
 ## Ordre d'impression — jamais la cale en premier
 
-| Job | Pièce | Durée | Matière | Ce qu'il valide |
+| Job | Pièce | Buse 0,4 | **Buse 0,6** | Ce qu'il valide |
 |---|---|---|---|---|
-| 0 | `gabarit_fente` | **15 min** | **4,0 g** | **le rayon réel du triangle** — il le mesure |
-| 1 | `essai` | **47 min** | **12,3 g** | la tête porte-t-elle au fond du lamage, l'embout atteint-il la vis, l'écrou entre-t-il, la M6 passe-t-elle |
-| 2 | `gabarit` | **50 min** | **15,1 g** | **le triangle, sur le plafond ET sur la platine** |
-| 3 | `cale` | **11 h** | **186 g** | la pièce |
+| 0 | `gabarit_fente` | 15 min · 4,0 g | **8 min · 4,7 g** | **le rayon réel du triangle** — il le mesure |
+| 1 | `essai` | 47 min · 12,3 g | **22 min · 12,4 g** | la tête porte-t-elle au fond du lamage, l'embout atteint-il la vis, l'écrou entre-t-il, la M6 passe-t-elle |
+| 2 | `gabarit` | 49 min · 15,1 g | **26 min · 18,7 g** | **le triangle, sur le plafond ET sur la platine** |
+| 3 | `cale` | 11 h 02 · 186 g | **3 h 44 · 184 g** | la pièce |
 
-Ces chiffres sortent de `make slice`, ils ne sont plus estimés. J'avais
-annoncé ~25 min pour le gabarit : c'était faux du simple au double. Un disque
-Ø150 plein, c'est ~40 m d'extrusion rien que pour la première couche.
-Attention quand même : ce sont des temps **PrusaSlicer**, et tu imprimes sous
-Cura + Klipper — prends-les comme un ordre de grandeur.
+Colonne 0,6 : couche 0,30, deux parois, remplissage une couche sur deux.
+**×2,95 sur la cale pour moins de matière** — voir `slicer/cura_buses.md`,
+et `make buses` pour régénérer la comparaison des trois buses.
+
+Ces chiffres sortent de `make slice` et `make buses`, ils ne sont plus
+estimés. J'avais annoncé ~25 min pour le gabarit : c'était faux du simple au
+double. Attention quand même : ce sont des temps **PrusaSlicer**, et tu
+imprimes sous Cura + Klipper — prends-les comme un ordre de grandeur, et
+surtout comme des **rapports** entre configurations, qui eux tiennent.
 
 ### `gabarit_fente` — l'instrument, 15 minutes et 4 grammes
 
@@ -165,7 +169,14 @@ compression. Le cœur du disque ne fait rien.
 | Matière | **PETG** | voir plus bas |
 | Supports | **aucun** | mesuré, pas supposé — voir ci-dessous |
 
-→ **186 g, 11 h** (mesuré par `make slice`).
+→ **186 g, 11 h** en buse 0,4 ; **184 g, 3 h 44** en buse 0,6 avec le
+remplissage une couche sur deux (mesuré par `make slice` et `make buses`).
+
+La hauteur de couche est **globale** dans Cura : impossible d'affiner
+seulement les logements d'écrous. Elle se choisit donc sur la plus petite
+cote verticale qui compte — le logement d'écrou, 5,8 mm pour un écrou de 5 —
+et la vitesse se récupère sur la buse et le remplissage. Détail dans
+`slicer/cura_buses.md`.
 
 ### Pourquoi aucun support, et comment on le sait
 

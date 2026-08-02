@@ -97,6 +97,14 @@ nut_h       = 5;      // hauteur d'un ecrou M6 DIN 934
 nut_clr     = 0.3;    // jeu du logement, sur plats
 nut_depth   = 5.8;    // profondeur du logement. DOIT depasser nut_h :
                       // un ecrou qui affleure empeche la cale de porter.
+layer_max   = 0.4;    // couche la plus epaisse envisagee (buse 0,8).
+                      // Le trancheur QUANTIFIE la profondeur du logement :
+                      // il ne peut la rendre qu'a une couche pres. Un
+                      // logement qui n'a que 0,3 mm de marge sur la hauteur
+                      // d'ecrou passe toutes les gardes geometriques et
+                      // ressort trop peu profond une fois imprime en 0,4.
+                      // Ce n'est pas une cote relevee sur le ventilateur :
+                      // c'est le pas de la machine, donc un assert.
 
 // --- PASSAGE DU CABLE -------------------------------------------------
 cable_d     = 25;     // traversant, centre
@@ -176,6 +184,8 @@ assert(web_cbl > 5, "lamage trop proche du passage de cable");
 assert(seat_t >= 2, "plafond de percage trop mince pour porter une tete");
 assert(nut_depth > nut_h,
        "logement moins profond que l'ecrou : la cale ne porterait plus a plat");
+assert(nut_depth - layer_max > nut_h,
+       "logement d'ecrou sans marge de quantification : une couche epaisse le rendrait trop court");
 assert(nut_depth + seat_t < disc_t, "logement et lamage se rejoignent");
 assert(cb_d > hd + 4, "lamage trop etroit pour une tete de vis");
 assert(cb_d/2 - cb_relief > hd/2 + 1,
@@ -203,6 +213,8 @@ echo(str("seat_t (plafond de percage) = ", seat_t, " mm"));
 echo(str("portee plate sous la tete = ", (cb_d - 2*cb_relief - hd)/2, " mm de large"));
 echo(str("porte-a-faux du plafond   = ", (cb_d - 2*cb_relief - hd)/2, " mm"));
 echo(str("ancrage rendu a une vis de 30 = ", 30 - seat_t, " mm"));
+echo(str("logement d'ecrou : ", nut_depth, " mm, soit ", nut_depth - nut_h,
+         " de marge sur l'ecrou (quantification max ", layer_max, ")"));
 echo(str("course de mesure du gabarit a fentes = R", bolt_r - gab_slot,
          " a R", bolt_r + gab_slot, " (entraxe ", (bolt_r-gab_slot)*sqrt(3),
          " a ", (bolt_r+gab_slot)*sqrt(3), ")"));

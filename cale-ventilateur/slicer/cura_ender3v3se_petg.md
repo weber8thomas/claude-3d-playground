@@ -136,16 +136,29 @@ Si tu changes l'un des trois pour aller plus vite sur le gabarit, il ne
 mesure plus rien d'utile : il te donne le diamètre d'un trou que tu
 n'imprimeras jamais.
 
-## Aller plus vite sur le gabarit
+## Aller plus vite
 
-Le temps du gabarit est dominé par la **première couche** : un disque Ø150
-plein, c'est ~40 m d'extrusion, soit ~13 min à 50 mm/s quoi qu'il arrive.
-C'est un plancher, la géométrie ne permet pas mieux.
+Trois leviers, par ordre de rendement — le premier est de loin le plus gros.
 
-Le seul vrai levier est l'épaisseur :
+**1. Changer de buse.** 0,6 mm et couche 0,30 avec le remplissage une couche
+sur deux : **×2,95 sur la cale**, 11 h 02 → 3 h 44, et 2,6 g de matière en
+moins. Tous les réglages et les temps mesurés sont dans **`cura_buses.md`**
+(`make buses` les régénère). C'est là qu'il faut aller avant de rogner sur
+quoi que ce soit d'autre.
+
+**2. Ne pas imprimer un disque plein pour mesurer un triangle.**
+`gabarit_fente` fait 6 cm³ contre 34 pour `gabarit` — **15 min contre 49 en
+0,4, 8 min contre 26 en 0,6** — et il *mesure* le rayon au lieu de le
+confirmer. Voir `README.md`.
+
+**3. L'épaisseur du gabarit.** Le reste de son temps est dominé par la
+première couche : un disque Ø150 plein, c'est ~40 m d'extrusion. Un gabarit
+qu'on presse contre un plafond n'a pas besoin de 2 mm :
 
     openscad -o gabarit_1mm.stl -D 'part="gabarit"' -D gab_t=1 \
              src/cale_ventilateur.scad
 
-1 mm au lieu de 2 : cinq couches au lieu de dix, ~10 min de gagnées. Un
-gabarit qu'on presse contre un plafond n'a pas besoin de 2 mm.
+Attention : les trois réglages qui décident du **diamètre réel des trous** —
+température, vitesse de périmètre externe, débit — doivent rester identiques
+entre le gabarit et la cale. Changer de buse entre les deux invalide le
+gabarit ; changer de buse pour les deux ne pose aucun problème.

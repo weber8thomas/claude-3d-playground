@@ -12,6 +12,7 @@ sur l'impression, tranche-la.
 
     make verify      # les sept gardes géométriques
     make slice       # la huitième : temps, poids et supports RÉELS
+    make buses       # 0,4 / 0,6 / 0,8 : les temps par buse, MESURÉS
     make web         # viewer 3D autonome, chaque itération à l'œil
 
 Ne conclus pas sans avoir vu passer la sortie.
@@ -252,6 +253,27 @@ n'est pas un temps Cura**, et sous Klipper le temps réel dépend surtout de
 Deux réglages échappent structurellement au trancheur et vivent dans
 `printer.cfg` : la `pressure_advance` (rondeur des Ø6 à vitesse) et l'input
 shaper. Aucun profil Cura ne peut les rattraper.
+
+**Le diamètre de buse n'est pas un réglage neutre.** `make buses` compare
+0,4 / 0,6 / 0,8 sur chaque pièce — temps mesurés, pas raisonnés. Là encore
+le raisonnement de coin de table s'était trompé : j'avais annoncé le
+`gabarit` limité par le débit parce qu'il n'est fait que de couches pleines,
+il n'y passe que 40 % de son temps. Retenu : **0,6 mm, couche 0,30,
+remplissage une couche sur deux — ×2,95 sur la cale et moins de matière**.
+La 0,8 ne rajoute que 18 %, contre +25 g et 80 % du temps déjà collé à un
+plafond de débit qui n'est qu'une hypothèse.
+
+Deux conséquences pour le modèle :
+
+- **La hauteur de couche est globale dans Cura.** Elle n'existe pas en *per
+  model settings* : on ne peut pas affiner seulement les logements d'écrous.
+  Elle se choisit donc sur la plus petite cote verticale qui compte, et
+  `mod_hubs` ne localise que le remplissage et les parois.
+- **Le trancheur quantifie les profondeurs.** D'où `layer_max = 0.4` et
+  `assert(nut_depth - layer_max > nut_h)` : un logement à 5,3 mm passait
+  toutes les gardes géométriques et serait ressorti trop court en couche
+  0,4. Ce n'est pas une cote relevée sur le ventilateur, c'est le pas de la
+  machine — donc un assert, pas une entrée de `target.json`.
 
 ## Ce qui reste ouvert
 

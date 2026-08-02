@@ -9,6 +9,9 @@ verify:            ## Les 7 gardes : WARNING, maillage, zmin, cotes, volume, per
 slice:             ## Garde 8 : trancher pour de vrai (aucun support, tout pont fait)
 	@python3 tools/slice_check.py
 
+buses:             ## Comparer les buses 0,4 / 0,6 / 0,8 : temps MESURES par piece
+	@python3 tools/buses.py $(PART)
+
 web:               ## Viewer 3D autonome (build/index.html) : la piece a l'oeil
 	@python3 tools/gallery.py
 	@mkdir -p docs && cp build/index.html docs/viewer.html
