@@ -7,6 +7,10 @@ Disque Ø150 × 30 mm, passage central Ø25 pour le câble. **Fixation en deux
 temps** : la cale se visse au plafond avec les vis existantes, la platine se
 visse ensuite sous la cale.
 
+**Tu veux juste imprimer ?** → **`slicer/FICHE_CURA.md`**. Une page, les
+réglages Cura à saisir une fois, et l'ordre des quatre impressions. Le reste
+de ce fichier explique le pourquoi.
+
 ## Démarrer
 
     make verify     # les 7 gardes géométriques, sur chaque pièce

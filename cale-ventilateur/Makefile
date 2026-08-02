@@ -29,6 +29,9 @@ export:            ## STL versionnes (stl/) pour telechargement / lien GitHub
 	@for p in $(PARTS); do \
 	  openscad -o stl/$$p.stl -D "part=\"$$p\"" $(SRC) 2>&1 | grep -Ei 'WARNING|ERROR' && exit 1 || true; \
 	  echo "  -> stl/$$p.stl"; done
+	@openscad -o stl/essai_buse06.stl -D 'part="essai"' -D clr=0.5 $(SRC) 2>&1 \
+	  | grep -Ei 'WARNING|ERROR' && exit 1 || true
+	@echo "  -> stl/essai_buse06.stl  (le meme essai, jeu de percage 0,5 pour la buse 0,6)"
 
 build/%.stl: $(SRC) | build
 	@openscad -o $@ -D 'part="$*"' $< 2>&1 | grep -Ei 'WARNING|ERROR' && exit 1 || true
